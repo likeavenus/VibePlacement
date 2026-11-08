@@ -81,7 +81,7 @@ try {
   await links.getByRole("button", { name: "Сохранить ссылки" }).click();
   await links.waitFor({ state: "detached" });
   check("External workspace link saved", await page.locator(".project-links a").getAttribute("rel") === "noopener noreferrer");
-  await page.getByRole("button", { name: "Собрать команду", exact: true }).click();
+  await page.getByRole("button", { name: "Создать игру", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Собрать команду" });
   await form.getByLabel("Название проекта", { exact: true }).fill("Тестовая новелла");
   await form.getByLabel("О проекте", { exact: true }).fill("История для проверки создания команд.");

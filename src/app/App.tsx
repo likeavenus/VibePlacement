@@ -19,7 +19,6 @@ import {
   LayoutGrid,
   Menu,
   Plus,
-  Sparkles,
   UserRound,
   Users,
   X,
@@ -123,22 +122,6 @@ function Shell() {
             Vibe<span>Placement</span>
           </span>
         </Link>
-        <nav className="top-nav" aria-label="Основная навигация">
-          <NavLink to="/games">Мои игры</NavLink>
-          <Link
-            to="/"
-            className={location.pathname === "/" && !mode ? "active" : ""}
-          >
-            Маркетплейс
-          </Link>
-          <Link
-            to="/?mode=projects"
-            className={location.pathname === "/" && mode ? "active" : ""}
-          >
-            Проекты
-          </Link>
-          <NavLink to="/studio">Мастерская</NavLink>
-        </nav>
         <div className="header-actions">
           <div className="language-switch" title="English — скоро">
             <span>RU</span>
@@ -182,54 +165,53 @@ function Shell() {
       )}
       <aside className={`sidebar ${menu ? "open" : ""}`}>
         <div className="sidebar-main">
-          <div className="workspace-label">
-            <span className="workspace-icon">
-              <Gamepad2 size={19} />
-            </span>
-            <div>
-              <strong>Game creators club</strong>
-              <span>Твоя игра начинается здесь</span>
-            </div>
-            <ChevronDown size={13} />
-          </div>
-          <div className="sidebar-section-label">НАПРАВЛЕНИЯ</div>
-          <nav className="category-nav" aria-label="Категории">
-            {categories.map(({ id, icon: Icon }) => (
-              <Link
-                key={id}
-                to={categoryLink(id)}
-                onClick={() => setMenu(false)}
-                className={
-                  currentCategory === id &&
-                  (location.pathname === "/" ||
-                    location.pathname === "/favorites")
-                    ? "active"
-                    : ""
-                }
-              >
-                <Icon size={18} />
-                <span>{t(id)}</span>
-                <small>
-                  {id === "all"
-                    ? categoryItems.length
-                    : categoryItems.filter((item) => item.category === id)
-                        .length}
-                </small>
-              </Link>
-            ))}
-          </nav>
-          <button
-            className="propose-category"
-            onClick={() => {
-              setCategoryModal(true);
-              setMenu(false);
-            }}
+          <details
+            className="sidebar-directions"
+            open={currentCategory !== "all"}
           >
-            <Plus size={16} />
-            Своя категория
-          </button>
+            <summary>
+              <span>Направления</span>
+              <small>{categoryItems.length}</small>
+              <ChevronDown size={15} />
+            </summary>
+            <nav className="category-nav" aria-label="Категории">
+              {categories.map(({ id, icon: Icon }) => (
+                <Link
+                  key={id}
+                  to={categoryLink(id)}
+                  onClick={() => setMenu(false)}
+                  className={
+                    currentCategory === id &&
+                    (location.pathname === "/" ||
+                      location.pathname === "/favorites")
+                      ? "active"
+                      : ""
+                  }
+                >
+                  <Icon size={18} />
+                  <span>{t(id)}</span>
+                  <small>
+                    {id === "all"
+                      ? categoryItems.length
+                      : categoryItems.filter((item) => item.category === id)
+                          .length}
+                  </small>
+                </Link>
+              ))}
+            </nav>
+            <button
+              className="propose-category"
+              onClick={() => {
+                setCategoryModal(true);
+                setMenu(false);
+              }}
+            >
+              <Plus size={16} />
+              Своя категория
+            </button>
+          </details>
           <div className="sidebar-divider" />
-          <div className="sidebar-section-label">ТВОЁ ПРОСТРАНСТВО</div>
+          <div className="sidebar-section-label">ЛИЧНОЕ</div>
           <nav className="personal-nav" aria-label="Личное пространство">
             <NavLink to="/games">
               <Gamepad2 size={18} />
@@ -263,14 +245,9 @@ function Shell() {
         </div>
         <div className="sidebar-bottom">
           <div className="start-project">
-            <span className="start-icon">
-              <Sparkles size={18} />
-            </span>
-            <strong>Есть та самая идея?</strong>
-            <p>Найди тех, кто её разделит.</p>
-            <button onClick={() => setCreate(true)}>
-              Собрать команду
-              <ArrowIcon />
+            <button onClick={() => setCreate(true)} aria-label="Создать игру">
+              <Plus size={17} />
+              Создать игру
             </button>
           </div>
           <Link to="/profile/denis" className="sidebar-user">
@@ -289,8 +266,8 @@ function Shell() {
       <main id="main-content" className="main-content">
         {import.meta.env.MODE === "github" && (
           <div className="pages-demo-note">
-            Тестовая версия · данные сохраняются только в этом браузере. Платежи
-            и отправка откликов отключены.
+            Демо · данные хранятся в этом браузере. Оплаты и отправка откликов
+            отключены.
           </div>
         )}
         <Suspense fallback={<RoutePending />}>
@@ -359,9 +336,6 @@ function Shell() {
       )}
     </div>
   );
-}
-function ArrowIcon() {
-  return <ChevronRight size={15} />;
 }
 export function App() {
   return (

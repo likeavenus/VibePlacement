@@ -149,7 +149,8 @@ try {
     });
   });
   await page.reload();
-  await page.getByRole("heading", { name: "Маркетплейс." }).waitFor();
+  await page.getByRole("heading", { name: "Всё для твоей игры." }).waitFor();
+  await page.locator(".sidebar-directions summary").click();
   check(
     "New directions in navigation",
     (await page
@@ -179,7 +180,7 @@ try {
   check("Progress completes after route ready");
   await page.unroute("**/src/features/profile/Profile.tsx*");
   await page.goBack();
-  await page.getByRole("heading", { name: "Маркетплейс." }).waitFor();
+  await page.getByRole("heading", { name: "Всё для твоей игры." }).waitFor();
   await page
     .getByRole("button", { name: "Опубликовать работу", exact: true })
     .first()

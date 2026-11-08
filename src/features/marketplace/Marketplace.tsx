@@ -1,19 +1,14 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  ArrowUpRight,
-  BriefcaseBusiness,
   Check,
   Search,
   SlidersHorizontal,
-  Sparkles,
-  Users,
   X,
 } from "lucide-react";
 import { useStore } from "../../app/store";
 import { WorkCard, ProjectCard } from "../../components/Cards";
-import { PixelScene } from "../../components/viewers/PixelScene";
-import { works, creatorById } from "../../data/mock";
+import { creatorById } from "../../data/mock";
 import { t } from "../../i18n";
 import { genres, stages, projectMeta } from "../../data/projects";
 export function Marketplace({
@@ -97,35 +92,21 @@ export function Marketplace({
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">
-            <span className="tiny-dot" /> НЕЗАВИСИМЫЕ. ТВОРЧЕСКИЕ. СВОИ.
-          </div>
           <h1>
             {favoritesOnly
               ? t("favorites")
               : mode === "projects"
-                ? "Найди свою игру"
-                : t("marketplace")}
+                ? "Найди команду"
+                : "Всё для твоей игры"}
             <span className="heading-dot">.</span>
           </h1>
           <p>
             {favoritesOnly
               ? `${store.favorites.length} сохранённых работ`
               : mode === "projects"
-                ? "Команды, которым близко то же, что и тебе."
-                : "Ассеты, анимации и люди для твоей игры."}
+                ? "Выбери жанр и свою роль."
+                : "Работы креаторов и люди в команду."}
           </p>
-        </div>
-        <div className="community-mark">
-          <span className="mini-avatars">
-            <i>М</i>
-            <i>А</i>
-            <i>К</i>
-          </span>
-          <span>
-            <strong>6 креаторов</strong>
-            <small>в демо-сообществе</small>
-          </span>
         </div>
       </div>
       {!favoritesOnly && (
@@ -140,9 +121,7 @@ export function Marketplace({
             className={mode === "services" ? "active" : ""}
             onClick={() => change("mode", "")}
           >
-            <BriefcaseBusiness size={17} />
-            {t("services")}
-            <span>{store.workList.length}</span>
+            Работы
           </button>
           <button
             role="tab"
@@ -150,9 +129,7 @@ export function Marketplace({
             className={mode === "projects" ? "active" : ""}
             onClick={() => change("mode", "projects")}
           >
-            <Users size={17} />
-            {t("teams")}
-            <span>{store.projectList.length}</span>
+            Игры
           </button>
         </div>
       )}
@@ -297,39 +274,14 @@ export function Marketplace({
           )}
         </div>
       )}
-      {!favoritesOnly &&
-        mode === "services" &&
-        category === "all" &&
-        !query &&
-        !activeFilters && (
-          <Link to="/?mode=projects&q=Последний" className="spotlight">
-            <div className="spotlight-icon">
-              <Sparkles size={20} />
-            </div>
-            <div className="spotlight-text">
-              <span>
-                КОМАНДА НЕДЕЛИ <b>REVSHARE</b>
-              </span>
-              <strong>«Последний рейс» ищет своих</strong>
-              <p>Pixel artist, звук и немного магии.</p>
-            </div>
-            <div className="spotlight-art">
-              <PixelScene station />
-            </div>
-            <span className="spotlight-link">
-              В команду
-              <ArrowUpRight size={17} />
-            </span>
-          </Link>
-        )}
       <div className="results-heading">
         <h2>
           {category === "all"
             ? mode === "services"
               ? favoritesOnly
-                ? "Сохранённые работы"
-                : "Сделано с характером"
-              : "Вместе к релизу"
+                ? "Сохранённое"
+                : "Работы"
+              : "Игры в поиске команды"
             : t(category as Parameters<typeof t>[0]) || "Работы"}
           <span>{count}</span>
         </h2>
@@ -359,12 +311,6 @@ export function Marketplace({
           </button>
         </div>
       )}
-      <div className="feed-footer">
-        <span className="tiny-dot" />
-        {count
-          ? "Пока это всё. Следующая идея может быть твоей."
-          : "Другой запрос может стать началом чего-то нового."}
-      </div>
     </>
   );
 }

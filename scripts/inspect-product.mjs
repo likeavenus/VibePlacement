@@ -1,0 +1,5 @@
+import {chromium} from 'playwright';
+import path from 'node:path';
+process.env.TEMP=path.resolve('.tmp');process.env.TMP=process.env.TEMP;process.env.TMPDIR=process.env.TEMP;
+const context=await chromium.launchPersistentContext(path.resolve('.cache/inspect-product'),{executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true,viewport:{width:390,height:900}});
+try{const page=context.pages()[0];await page.goto('http://127.0.0.1:5186/games/little-station');await page.getByRole('table').waitFor();console.log(await page.evaluate(()=>({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,items:[...document.querySelectorAll('body *')].filter(el=>{const r=el.getBoundingClientRect();return r.right>innerWidth+1&&!el.closest('.task-table-scroll')&&getComputedStyle(el).visibility!=='hidden';}).map(el=>({tag:el.tagName,cls:el.className,text:el.textContent?.slice(0,60),right:el.getBoundingClientRect().right,width:el.getBoundingClientRect().width}))})));}finally{await context.close();}

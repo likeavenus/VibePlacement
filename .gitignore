@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.cache/
+.tmp/
+artifacts/
+*.log
+.env.local
+.env
+.env.*
+!.env.example
+server/.env

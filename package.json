@@ -1,0 +1,46 @@
+{
+  "name": "vibeplacement",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "typecheck": "tsc --noEmit",
+    "build:selectel": "tsc --noEmit && vite build",
+    "build:pages": "tsc --noEmit && vite build --mode github",
+    "preview": "vite preview --host 0.0.0.0",
+    "verify": "node scripts/verify-product.mjs",
+    "dev:api": "npm --prefix server run dev",
+    "typecheck:api": "npm --prefix server run typecheck"
+  },
+  "dependencies": {
+    "@esotericsoftware/spine-pixi-v8": "~4.2.0",
+    "@fontsource-variable/golos-text": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.4.0",
+    "@tailwindcss/vite": "^4.1.0",
+    "idb": "^8.0.4",
+    "lucide-react": "^0.468.0",
+    "pixi.js": "^8.22.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.0",
+    "react-zoom-pan-pinch": "^3.7.0",
+    "tailwindcss": "^4.1.0",
+    "three": "^0.180.0",
+    "wavesurfer.js": "^7.11.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/three": "^0.180.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "playwright": "^1.56.0",
+    "prettier": "^3.9.10",
+    "typescript": "~5.9.3",
+    "vite": "^7.1.0"
+  }
+}

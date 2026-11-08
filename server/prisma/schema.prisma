@@ -1,0 +1,279 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+enum WorkKind {
+  MODEL
+  ART
+  ANIMATION
+  AUDIO
+  MOTION
+  UX_UI
+  WRITING
+  VIDEO
+}
+enum OfferKind {
+  ASSET
+  SERVICE
+  SHOWCASE
+}
+enum PublicationStatus {
+  DRAFT
+  MODERATION
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+enum TaskStatus {
+  DRAFT
+  OPEN
+  IN_PROGRESS
+  REVIEW
+  ACCEPTED
+  CANCELLED
+}
+enum OrderStatus {
+  CREATED
+  AWAITING_PAYMENT
+  PAID
+  IN_PROGRESS
+  DELIVERED
+  COMPLETED
+  DISPUTED
+  REFUNDED
+  CANCELLED
+}
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+enum LedgerKind {
+  SALE
+  PLATFORM_FEE
+  REFUND
+  PAYOUT
+}
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  authSubject String @unique
+  email String @unique
+  displayName String
+  createdAt DateTime @default(now())
+  profile Profile?
+  games Game[]
+  assignedTasks GameTask[] @relation("TaskAssignee")
+  publications Publication[]
+  comments Comment[]
+  purchases Order[] @relation("Buyer")
+  sales Order[] @relation("Seller")
+  reviews Review[] @relation("Reviewer")
+  receivedReviews Review[] @relation("ReviewRecipient")
+  ledger LedgerEntry[]
+  memberships GameMember[]
+  entitlements Entitlement[]
+}
+model Profile {
+  userId String @id @db.Uuid
+  handle String @unique
+  bio String @default("")
+  skills String[]
+  avatarKey String?
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+}
+model Game {
+  id String @id @default(uuid()) @db.Uuid
+  ownerId String @db.Uuid
+  title String
+  description String
+  engine String
+  genre String
+  budgetMinor BigInt @default(0)
+  currency String @default("RUB") @db.Char(3)
+  version Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner User @relation(fields:[ownerId],references:[id])
+  tasks GameTask[]
+  members GameMember[]
+  @@index([ownerId,createdAt])
+}
+model GameMember {
+  gameId String @db.Uuid
+  userId String @db.Uuid
+  role String
+  acceptedAt DateTime?
+  revenueShareBps Int?
+  agreementKey String?
+  game Game @relation(fields:[gameId],references:[id],onDelete:Cascade)
+  user User @relation(fields:[userId],references:[id])
+  @@id([gameId,userId])
+}
+model GameTask {
+  id String @id @default(uuid()) @db.Uuid
+  gameId String @db.Uuid
+  assigneeId String? @db.Uuid
+  title String
+  brief String
+  kind WorkKind
+  status TaskStatus @default(DRAFT)
+  budgetMinor BigInt @default(0)
+  deadline DateTime?
+  requiredAnimations String[]
+  version Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  game Game @relation(fields:[gameId],references:[id],onDelete:Cascade)
+  assignee User? @relation("TaskAssignee",fields:[assigneeId],references:[id])
+  deliveries Delivery[]
+  orders Order[]
+  @@index([gameId,status])
+}
+model Publication {
+  id String @id @default(uuid()) @db.Uuid
+  authorId String @db.Uuid
+  title String
+  description String
+  kind WorkKind
+  offer OfferKind
+  status PublicationStatus @default(DRAFT)
+  priceMinor BigInt @default(0)
+  currency String @default("RUB") @db.Char(3)
+  licenseText String
+  licenseVersion Int @default(1)
+  tags String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author User @relation(fields:[authorId],references:[id])
+  assets AssetFile[]
+  comments Comment[]
+  orders Order[]
+  entitlements Entitlement[]
+  @@index([status,kind,createdAt])
+}
+model AssetFile {
+  id String @id @default(uuid()) @db.Uuid
+  publicationId String @db.Uuid
+  storageKey String @unique
+  fileName String
+  contentType String
+  byteSize BigInt
+  sha256 String
+  role String
+  runtimeVersion String?
+  metadata Json?
+  verifiedAt DateTime?
+  publication Publication @relation(fields:[publicationId],references:[id],onDelete:Cascade)
+}
+model Comment {
+  id String @id @default(uuid()) @db.Uuid
+  publicationId String @db.Uuid
+  authorId String @db.Uuid
+  body String @db.VarChar(1000)
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+  publication Publication @relation(fields:[publicationId],references:[id],onDelete:Cascade)
+  author User @relation(fields:[authorId],references:[id])
+  @@index([publicationId,createdAt])
+}
+model Order {
+  id String @id @default(uuid()) @db.Uuid
+  buyerId String @db.Uuid
+  sellerId String @db.Uuid
+  publicationId String? @db.Uuid
+  taskId String? @db.Uuid
+  status OrderStatus @default(CREATED)
+  amountMinor BigInt
+  platformFeeMinor BigInt
+  currency String @default("RUB") @db.Char(3)
+  termsSnapshot Json
+  idempotencyKey String @unique
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  buyer User @relation("Buyer",fields:[buyerId],references:[id])
+  seller User @relation("Seller",fields:[sellerId],references:[id])
+  publication Publication? @relation(fields:[publicationId],references:[id])
+  task GameTask? @relation(fields:[taskId],references:[id])
+  payments Payment[]
+  reviews Review[]
+  ledger LedgerEntry[]
+  entitlements Entitlement[]
+  deliveries Delivery[]
+  @@index([buyerId,status])
+  @@index([sellerId,status])
+}
+model Payment {
+  id String @id @default(uuid()) @db.Uuid
+  orderId String @db.Uuid
+  provider String
+  providerPaymentId String @unique
+  status PaymentStatus @default(PENDING)
+  amountMinor BigInt
+  createdAt DateTime @default(now())
+  order Order @relation(fields:[orderId],references:[id])
+}
+model WebhookEvent {
+  id String @id @default(uuid()) @db.Uuid
+  provider String
+  providerEventId String
+  payload Json
+  processedAt DateTime?
+  receivedAt DateTime @default(now())
+  @@unique([provider,providerEventId])
+}
+model Delivery {
+  id String @id @default(uuid()) @db.Uuid
+  taskId String @db.Uuid
+  orderId String @db.Uuid
+  assetKeys String[]
+  note String
+  createdAt DateTime @default(now())
+  acceptedAt DateTime?
+  task GameTask @relation(fields:[taskId],references:[id])
+  order Order @relation(fields:[orderId],references:[id])
+}
+model Review {
+  id String @id @default(uuid()) @db.Uuid
+  orderId String @db.Uuid
+  authorId String @db.Uuid
+  recipientId String @db.Uuid
+  rating Int
+  body String
+  createdAt DateTime @default(now())
+  order Order @relation(fields:[orderId],references:[id])
+  author User @relation("Reviewer",fields:[authorId],references:[id])
+  recipient User @relation("ReviewRecipient",fields:[recipientId],references:[id])
+  @@unique([orderId,authorId])
+}
+model LedgerEntry {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  orderId String @db.Uuid
+  kind LedgerKind
+  amountMinor BigInt
+  currency String @default("RUB") @db.Char(3)
+  operationKey String @unique
+  createdAt DateTime @default(now())
+  user User @relation(fields:[userId],references:[id])
+  order Order @relation(fields:[orderId],references:[id])
+  @@index([userId,createdAt])
+}
+model Entitlement {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  publicationId String @db.Uuid
+  orderId String @db.Uuid
+  licenseSnapshot Json
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields:[userId],references:[id])
+  publication Publication @relation(fields:[publicationId],references:[id])
+  order Order @relation(fields:[orderId],references:[id])
+  @@unique([userId,publicationId,orderId])
+}

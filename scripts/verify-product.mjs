@@ -70,9 +70,10 @@ async function pixels(locator) {
   });
 }
 try {
-  await navigate(base);
+  await navigate(base + "/market");
   await page.evaluate(() => {
     localStorage.clear();
+    localStorage.setItem("vibeplacement:guide-v1", "done");
     indexedDB.deleteDatabase("vibeplacement-assets");
   });
   await page.reload();
@@ -355,7 +356,7 @@ try {
     );
     if (width === 390) {
       await page.screenshot({ path: "artifacts/spine-mobile.png" });
-      await navigate(base);
+      await navigate(base + "/market");
       await readySpine();
       await page.screenshot({ path: "artifacts/vibeplacement-mobile.png" });
       await navigate(base + "/games/little-station");
@@ -370,7 +371,7 @@ try {
   }
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    await navigate(base);
+    await navigate(base + "/market");
     await page.locator('[data-work="panel"]').scrollIntoViewIfNeeded();
     const model = page.locator(".model-viewer canvas");
     await model.waitFor();

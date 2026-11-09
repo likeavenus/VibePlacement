@@ -9,6 +9,7 @@ const pages = base.includes("/VibePlacement");
 const url = (route) => pages ? base.replace(/\/$/, "") + "/#" + route : base + route;
 const context = await chromium.launchPersistentContext(path.join(process.cwd(), ".cache", pages ? "pages-verification" : "projects-verification"), { executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, acceptDownloads: true, downloadsPath: path.join(process.cwd(), ".tmp", "downloads"), viewport: { width: 1440, height: 1000 }, args: ["--enable-unsafe-swiftshader", "--use-angle=swiftshader"] });
 const page = context.pages()[0], errors = [], checks = [], failedAssets = [];
+await context.addInitScript(() => localStorage.setItem("vibeplacement:guide-v1", "done"));
 page.on("pageerror", (e) => errors.push(e.message));
 page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
 page.on("response", (response) => { if (response.url().startsWith(base) && response.status() >= 400) failedAssets.push({ url: response.url(), status: response.status() }); });
@@ -81,7 +82,8 @@ try {
   await links.getByRole("button", { name: "Сохранить ссылки" }).click();
   await links.waitFor({ state: "detached" });
   check("External workspace link saved", await page.locator(".project-links a").getAttribute("rel") === "noopener noreferrer");
-  await page.getByRole("button", { name: "Создать игру", exact: true }).click();
+  await navigate("/discover");
+  await page.getByRole("button", { name: "Объявить набор", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Собрать команду" });
   await form.getByLabel("Название проекта", { exact: true }).fill("Тестовая новелла");
   await form.getByLabel("О проекте", { exact: true }).fill("История для проверки создания команд.");

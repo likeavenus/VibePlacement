@@ -54,6 +54,7 @@ const workSchema = z.object({
   animations: z.array(z.string()).optional(),
 });
 const projectSchema = z.object({
+  gameId: z.string().optional(),
   meta: projectMetaSchema.optional(),
   links: z.array(projectLinkSchema).max(8).optional(),
   id: z.string(),

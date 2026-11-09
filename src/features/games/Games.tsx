@@ -1,5 +1,10 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -12,6 +17,7 @@ import {
   Trash2,
   Wallet,
   X,
+  Users,
 } from "lucide-react";
 import { useStore } from "../../app/store";
 import { money, creators } from "../../data/mock";
@@ -22,10 +28,15 @@ import { PixelScene } from "../../components/viewers/PixelScene";
 import { Viewer } from "../../components/viewers/Viewer";
 import { t } from "../../i18n";
 import { categoryIds } from "../../data/categories";
+import { CreateProject } from "../projects/CreateProject";
+import { genres } from "../../data/projects";
 export const taskCategories = categoryIds;
 export function Games() {
   const store = useStore();
-  const [create, setCreate] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const create = params.get("new") === "1";
+  const setCreate = (open: boolean) =>
+    setParams(open ? { new: "1" } : {}, { replace: true });
   return (
     <>
       <div className="page-heading">
@@ -36,7 +47,7 @@ export function Games() {
           <h1>
             Мои игры<span className="heading-dot">.</span>
           </h1>
-          <p>Твои миры. Твои правила.</p>
+          <p>Запланируй работы, подбери материалы и собери команду.</p>
         </div>
         <button className="primary-btn" onClick={() => setCreate(true)}>
           <Plus size={17} />
@@ -55,6 +66,7 @@ export function Games() {
               </div>
               <div className="game-item-content">
                 <div className="tags">
+                  {game.id === "little-station" && <span>Демо-пример</span>}
                   <span>{game.engine}</span>
                   <span>{game.genre}</span>
                 </div>
@@ -148,11 +160,9 @@ function NewGame({ onClose }: { onClose: () => void }) {
           <label>
             Жанр
             <select name="genre">
-              <option>Cozy adventure</option>
-              <option>RPG</option>
-              <option>Платформер</option>
-              <option>Головоломка</option>
-              <option>Другое</option>
+              {Object.values(genres).map((genre) => (
+                <option key={genre}>{genre}</option>
+              ))}
             </select>
           </label>
         </div>
@@ -191,6 +201,7 @@ export function GameWorkspace() {
     [query, setQuery] = useState(""),
     [status, setStatus] = useState("all"),
     [preview, setPreview] = useState<string>();
+  const [recruit, setRecruit] = useState(false);
   if (!game)
     return (
       <div className="empty-state">
@@ -230,6 +241,41 @@ export function GameWorkspace() {
           Добавить задачу
         </button>
       </div>
+      <nav className="game-next-steps" aria-label="Следующие шаги игры">
+        <button onClick={() => setEditing(null)}>
+          <Plus size={19} />
+          <span>
+            <strong>1. Запланировать работу</strong>
+            <small>Задачи, требования и бюджет</small>
+          </span>
+        </button>
+        <Link to="/market">
+          <Search size={19} />
+          <span>
+            <strong>2. Найти материалы</strong>
+            <small>Готовые ассеты и услуги</small>
+          </span>
+        </Link>
+        {store.projectList.find((p) => p.gameId === game.id) ? (
+          <Link
+            to={`/projects/${store.projectList.find((p) => p.gameId === game.id)!.id}`}
+          >
+            <Users size={19} />
+            <span>
+              <strong>3. Набор в команду</strong>
+              <small>Открыть своё объявление</small>
+            </span>
+          </Link>
+        ) : (
+          <button onClick={() => setRecruit(true)}>
+            <Users size={19} />
+            <span>
+              <strong>3. Собрать команду</strong>
+              <small>Роли и условия участия</small>
+            </span>
+          </button>
+        )}
+      </nav>
       <div className="game-metrics">
         <div>
           <Wallet size={18} />
@@ -265,13 +311,13 @@ export function GameWorkspace() {
       )}
       <div className="workspace-toolbar">
         <h2>
-          Тело игры<span>{game.tasks.length}</span>
+          Задачи игры<span>{game.tasks.length}</span>
         </h2>
         <label className="search-field">
           <Search size={16} />
           <input
             aria-label="Найти задачу"
-            placeholder="Найти сущность"
+            placeholder="Название или требования"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -368,7 +414,7 @@ export function GameWorkspace() {
                     ) : (
                       <Link
                         className="text-action"
-                        to={`/?category=${task.category}`}
+                        to={`/market?category=${task.category}`}
                       >
                         Подобрать
                         <ArrowUpRight size={14} />
@@ -409,11 +455,14 @@ export function GameWorkspace() {
         <span>
           Принято на {money(doneBudget)} · статусы и бюджет демонстрационные
         </span>
-        <Link to="/" className="text-action">
+        <Link to="/market" className="text-action">
           Найти ассеты и креаторов
           <ArrowUpRight size={15} />
         </Link>
       </div>
+      {recruit && (
+        <CreateProject game={game} onClose={() => setRecruit(false)} />
+      )}
       {editing !== undefined && (
         <TaskEditor
           game={game}

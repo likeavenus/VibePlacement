@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import {
   Link,
   NavLink,
+  Navigate,
   Route,
   Routes,
   useLocation,
@@ -21,6 +22,8 @@ import {
   Plus,
   UserRound,
   Users,
+  House,
+  CircleHelp,
   X,
 } from "lucide-react";
 import { StoreProvider, useStore } from "./store";
@@ -36,6 +39,8 @@ import type { Category } from "../data/types";
 import { PublishWork } from "../features/studio/PublishWork";
 import { directions } from "../data/categories";
 import { NavigationProgress, RoutePending } from "./NavigationProgress";
+import { Start } from "./Start";
+import { Guide, guideSeen } from "./Guide";
 const Marketplace = lazy(() =>
   import("../features/marketplace/Marketplace").then((m) => ({
     default: m.Marketplace,
@@ -75,7 +80,9 @@ function Shell() {
     [categoryModal, setCategoryModal] = useState(false),
     [menu, setMenu] = useState(false),
     [notifications, setNotifications] = useState(false);
-  const mode = params.get("mode") === "projects",
+  const [guide, setGuide] = useState(() => !guideSeen());
+  const mode =
+      location.pathname === "/discover" || params.get("mode") === "projects",
     currentCategory = params.get("category") ?? "all";
   const categoryItems = mode ? store.projectList : store.workList;
   useEffect(() => {
@@ -95,246 +102,315 @@ function Shell() {
     return () => clearTimeout(timer);
   }, [store.toast, store.setToast]);
   const categoryLink = (id: Category) => {
-    const next = new URLSearchParams(params);
+    const next = new URLSearchParams(
+      location.pathname === "/market" ||
+        location.pathname === "/discover" ||
+        location.pathname === "/favorites"
+        ? params
+        : undefined,
+    );
     if (id === "all") next.delete("category");
     else next.set("category", id);
-    return `${location.pathname === "/favorites" ? "/favorites" : "/"}?${next.toString()}`;
+    return `${location.pathname === "/favorites" ? "/favorites" : mode || location.pathname === "/discover" ? "/discover" : "/market"}?${next.toString()}`;
   };
   return (
-    <div className="app-shell">
-      <a href="#main-content" className="skip-link">
-        К содержимому
-      </a>
-      <header className="topbar">
-        <button
-          className="icon-btn mobile-menu"
-          aria-label={menu ? "Закрыть меню" : "Открыть меню"}
-          aria-expanded={menu}
-          onClick={() => setMenu(!menu)}
-        >
-          {menu ? <X size={22} /> : <Menu size={22} />}
-        </button>
-        <Link to="/" className="brand" aria-label="VibePlacement — главная">
-          <span className="brand-symbol">
-            <Gamepad2 size={25} strokeWidth={2.1} />
-          </span>
-          <span className="brand-word">
-            Vibe<span>Placement</span>
-          </span>
-        </Link>
-        <div className="header-actions">
-          <div className="language-switch" title="English — скоро">
-            <span>RU</span>
-            <span>/</span>
-            <button disabled aria-label="English — скоро">
-              EN
-            </button>
-          </div>
+    <>
+      <div className="app-shell" inert={guide}>
+        <a href="#main-content" className="skip-link">
+          К содержимому
+        </a>
+        <header className="topbar">
           <button
-            className="icon-btn notification-button"
-            aria-label="Уведомления"
-            title="Уведомления"
-            onClick={() => setNotifications(true)}
+            className="icon-btn mobile-menu"
+            aria-label={menu ? "Закрыть меню" : "Открыть меню"}
+            aria-expanded={menu}
+            onClick={() => setMenu(!menu)}
           >
-            <Bell size={18} />
+            {menu ? <X size={22} /> : <Menu size={22} />}
           </button>
-          <button
-            className="primary-btn create-button"
-            aria-label="Опубликовать работу"
-            title="Опубликовать работу"
-            onClick={() => setPublish(true)}
-          >
-            <Plus size={17} />
-            <span>Публикация</span>
-          </button>
-          <Link
-            to="/profile/denis"
-            aria-label="Мой профиль"
-            className="header-avatar"
-          >
-            <Avatar creator={creators[2]} />
+          <Link to="/" className="brand" aria-label="VibePlacement — главная">
+            <span className="brand-symbol">
+              <Gamepad2 size={25} strokeWidth={2.1} />
+            </span>
+            <span className="brand-word">
+              Vibe<span>Placement</span>
+            </span>
           </Link>
-        </div>
-      </header>
-      {menu && (
-        <button
-          className="sidebar-backdrop"
-          aria-label="Закрыть меню"
-          onClick={() => setMenu(false)}
-        />
-      )}
-      <aside className={`sidebar ${menu ? "open" : ""}`}>
-        <div className="sidebar-main">
-          <details
-            className="sidebar-directions"
-            open={currentCategory !== "all"}
-          >
-            <summary>
-              <span>Направления</span>
-              <small>{categoryItems.length}</small>
-              <ChevronDown size={15} />
-            </summary>
-            <nav className="category-nav" aria-label="Категории">
-              {categories.map(({ id, icon: Icon }) => (
-                <Link
-                  key={id}
-                  to={categoryLink(id)}
-                  onClick={() => setMenu(false)}
-                  className={
-                    currentCategory === id &&
-                    (location.pathname === "/" ||
-                      location.pathname === "/favorites")
-                      ? "active"
-                      : ""
-                  }
-                >
-                  <Icon size={18} />
-                  <span>{t(id)}</span>
-                  <small>
-                    {id === "all"
-                      ? categoryItems.length
-                      : categoryItems.filter((item) => item.category === id)
-                          .length}
-                  </small>
-                </Link>
-              ))}
-            </nav>
+          <div className="header-actions">
             <button
-              className="propose-category"
+              className="icon-btn"
+              aria-label="Открыть гайд"
+              title="Короткий гайд"
               onClick={() => {
-                setCategoryModal(true);
                 setMenu(false);
+                setGuide(true);
               }}
             >
-              <Plus size={16} />
-              Своя категория
+              <CircleHelp size={20} />
             </button>
-          </details>
-          <div className="sidebar-divider" />
-          <div className="sidebar-section-label">ЛИЧНОЕ</div>
-          <nav className="personal-nav" aria-label="Личное пространство">
-            <NavLink to="/games">
-              <Gamepad2 size={18} />
-              <span>Мои игры</span>
-              <small>{store.games.length}</small>
-            </NavLink>
-            <NavLink to="/studio">
-              <Palette size={18} />
-              <span>Мастерская</span>
-            </NavLink>
-            <NavLink to="/library">
-              <LibraryBig size={18} />
-              <span>Библиотека</span>
-            </NavLink>
-            <NavLink to="/favorites">
-              <Bookmark size={18} />
-              <span>{t("favorites")}</span>
-              {store.favorites.length > 0 && (
-                <small>{store.favorites.length}</small>
-              )}
-            </NavLink>
-            <NavLink to="/profile/denis">
-              <UserRound size={18} />
-              <span>{t("profile")}</span>
-            </NavLink>
-            <NavLink to="/creators">
-              <Users size={18} />
-              <span>{t("creators")}</span>
-            </NavLink>
-          </nav>
-        </div>
-        <div className="sidebar-bottom">
-          <div className="start-project">
-            <button onClick={() => setCreate(true)} aria-label="Создать игру">
-              <Plus size={17} />
-              Создать игру
-            </button>
-          </div>
-          <Link to="/profile/denis" className="sidebar-user">
-            <Avatar creator={creators[2]} />
-            <div>
-              <strong>Денис / dev</strong>
-              <span>Личный профиль</span>
+            <div className="language-switch" title="English — скоро">
+              <span>RU</span>
+              <span>/</span>
+              <button disabled aria-label="English — скоро">
+                EN
+              </button>
             </div>
-            <ChevronRight size={15} />
-          </Link>
-          <div className="sidebar-footnote">
-            <span>© VibePlacement 2026</span>
+            <button
+              className="icon-btn notification-button"
+              aria-label="Уведомления"
+              title="Уведомления"
+              onClick={() => setNotifications(true)}
+            >
+              <Bell size={18} />
+            </button>
+            <Link
+              to="/profile/denis"
+              aria-label="Мой профиль"
+              className="header-avatar"
+            >
+              <Avatar creator={creators[2]} />
+            </Link>
           </div>
-        </div>
-      </aside>
-      <main id="main-content" className="main-content">
-        {import.meta.env.MODE === "github" && (
-          <div className="pages-demo-note">
-            Демо · данные хранятся в этом браузере. Оплаты и отправка откликов
-            отключены.
+        </header>
+        {menu && (
+          <button
+            className="sidebar-backdrop"
+            aria-label="Закрыть меню"
+            onClick={() => setMenu(false)}
+          />
+        )}
+        <aside className={`sidebar ${menu ? "open" : ""}`}>
+          <div className="sidebar-main">
+            <nav
+              className="personal-nav primary-navigation"
+              aria-label="Основная навигация"
+            >
+              <NavLink to="/" end>
+                <House size={18} />
+                <span>Начать здесь</span>
+              </NavLink>
+              <NavLink to="/market">
+                <LayoutGrid size={18} />
+                <span>Ассеты и услуги</span>
+              </NavLink>
+              <NavLink to="/discover">
+                <Users size={18} />
+                <span>Найти проект</span>
+              </NavLink>
+            </nav>
+            <div className="sidebar-divider" />
+            <details
+              className="sidebar-directions"
+              open={currentCategory !== "all"}
+            >
+              <summary>
+                <span>Направления</span>
+                <small>{categoryItems.length}</small>
+                <ChevronDown size={15} />
+              </summary>
+              <nav className="category-nav" aria-label="Категории">
+                {categories.map(({ id, icon: Icon }) => (
+                  <Link
+                    key={id}
+                    to={categoryLink(id)}
+                    onClick={() => setMenu(false)}
+                    className={
+                      currentCategory === id &&
+                      (location.pathname === "/market" ||
+                        location.pathname === "/discover" ||
+                        location.pathname === "/favorites")
+                        ? "active"
+                        : ""
+                    }
+                  >
+                    <Icon size={18} />
+                    <span>{t(id)}</span>
+                    <small>
+                      {id === "all"
+                        ? categoryItems.length
+                        : categoryItems.filter((item) => item.category === id)
+                            .length}
+                    </small>
+                  </Link>
+                ))}
+              </nav>
+              <button
+                className="propose-category"
+                onClick={() => {
+                  setCategoryModal(true);
+                  setMenu(false);
+                }}
+              >
+                <Plus size={16} />
+                Своя категория
+              </button>
+            </details>
+            <div className="sidebar-divider" />
+            <div className="sidebar-section-label">ЛИЧНОЕ</div>
+            <nav className="personal-nav" aria-label="Личное пространство">
+              <NavLink to="/games">
+                <Gamepad2 size={18} />
+                <span>Мои игры</span>
+                <small>{store.games.length}</small>
+              </NavLink>
+              <NavLink to="/studio">
+                <Palette size={18} />
+                <span>Мои публикации</span>
+              </NavLink>
+              <NavLink to="/library">
+                <LibraryBig size={18} />
+                <span>Мои покупки</span>
+              </NavLink>
+              <NavLink to="/favorites">
+                <Bookmark size={18} />
+                <span>{t("favorites")}</span>
+                {store.favorites.length > 0 && (
+                  <small>{store.favorites.length}</small>
+                )}
+              </NavLink>
+              <NavLink to="/profile/denis">
+                <UserRound size={18} />
+                <span>{t("profile")}</span>
+              </NavLink>
+              <NavLink to="/creators">
+                <Users size={18} />
+                <span>{t("creators")}</span>
+              </NavLink>
+            </nav>
+          </div>
+          <div className="sidebar-bottom">
+            <div className="start-project">
+              <button
+                onClick={() => {
+                  setMenu(false);
+                  navigate("/games?new=1");
+                }}
+                aria-label="Создать игру"
+              >
+                <Plus size={17} />
+                Создать игру
+              </button>
+            </div>
+            <Link to="/profile/denis" className="sidebar-user">
+              <Avatar creator={creators[2]} />
+              <div>
+                <strong>Денис / dev</strong>
+                <span>Личный профиль</span>
+              </div>
+              <ChevronRight size={15} />
+            </Link>
+            <div className="sidebar-footnote">
+              <span>© VibePlacement 2026</span>
+            </div>
+          </div>
+        </aside>
+        <main id="main-content" className="main-content">
+          {import.meta.env.MODE === "github" && (
+            <div className="pages-demo-note">
+              Демо · данные хранятся в этом браузере. Оплаты и отправка откликов
+              отключены.
+            </div>
+          )}
+          <Suspense fallback={<RoutePending />}>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  params.size ? (
+                    <Navigate
+                      replace
+                      to={`${mode ? "/discover" : "/market"}?${params.toString()}`}
+                    />
+                  ) : (
+                    <Start onPublish={() => setPublish(true)} />
+                  )
+                }
+              />
+              <Route
+                path="/market"
+                element={<Marketplace onPublish={() => setPublish(true)} />}
+              />
+              <Route
+                path="/discover"
+                element={
+                  <Marketplace projectsOnly onRecruit={() => setCreate(true)} />
+                }
+              />
+              <Route path="/projects/:id" element={<ProjectPage />} />
+              <Route path="/games" element={<Games />} />
+              <Route path="/games/:id" element={<GameWorkspace />} />
+              <Route path="/studio" element={<Studio />} />
+              <Route path="/library" element={<Library />} />
+              <Route
+                path="/favorites"
+                element={<Marketplace favoritesOnly />}
+              />
+              <Route path="/creators" element={<Creators />} />
+              <Route path="/profile/:id" element={<Profile />} />
+              <Route
+                path="*"
+                element={
+                  <div className="empty-state">
+                    <h1>Такой страницы нет</h1>
+                    <button
+                      className="primary-btn"
+                      onClick={() => navigate("/")}
+                    >
+                      На главную
+                    </button>
+                  </div>
+                }
+              />
+            </Routes>
+          </Suspense>
+        </main>
+        {create && <CreateProject onClose={() => setCreate(false)} />}
+        {publish && <PublishWork onClose={() => setPublish(false)} />}
+        {categoryModal && (
+          <ProposeCategory onClose={() => setCategoryModal(false)} />
+        )}
+        {notifications && (
+          <Modal title="Уведомления" onClose={() => setNotifications(false)}>
+            <div className="notifications-list">
+              {store.applications.length ? (
+                <>
+                  <p>
+                    Сохранённые отклики и запросы:{" "}
+                    <strong>{store.applications.length}</strong>
+                  </p>
+                  <span>Ожидают подключения сервера.</span>
+                </>
+              ) : (
+                <>
+                  <Bell size={32} />
+                  <h3>Пока тихо</h3>
+                  <span>Новых уведомлений нет.</span>
+                </>
+              )}
+            </div>
+          </Modal>
+        )}
+        {store.toast && (
+          <div className="toast" role="status">
+            <span className="tiny-dot" />
+            {store.toast}
+            <button
+              className="icon-btn"
+              aria-label="Скрыть уведомление"
+              onClick={() => store.setToast("")}
+            >
+              <X size={14} />
+            </button>
           </div>
         )}
-        <Suspense fallback={<RoutePending />}>
-          <Routes>
-            <Route path="/" element={<Marketplace />} />
-            <Route path="/projects/:id" element={<ProjectPage />} />
-            <Route path="/games" element={<Games />} />
-            <Route path="/games/:id" element={<GameWorkspace />} />
-            <Route path="/studio" element={<Studio />} />
-            <Route path="/library" element={<Library />} />
-            <Route path="/favorites" element={<Marketplace favoritesOnly />} />
-            <Route path="/creators" element={<Creators />} />
-            <Route path="/profile/:id" element={<Profile />} />
-            <Route
-              path="*"
-              element={
-                <div className="empty-state">
-                  <h1>Такой страницы нет</h1>
-                  <button className="primary-btn" onClick={() => navigate("/")}>
-                    На главную
-                  </button>
-                </div>
-              }
-            />
-          </Routes>
-        </Suspense>
-      </main>
-      {create && <CreateProject onClose={() => setCreate(false)} />}
-      {publish && <PublishWork onClose={() => setPublish(false)} />}
-      {categoryModal && (
-        <ProposeCategory onClose={() => setCategoryModal(false)} />
+      </div>
+      {guide && (
+        <Guide
+          onClose={() => setGuide(false)}
+          onPublish={() => setPublish(true)}
+        />
       )}
-      {notifications && (
-        <Modal title="Уведомления" onClose={() => setNotifications(false)}>
-          <div className="notifications-list">
-            {store.applications.length ? (
-              <>
-                <p>
-                  Сохранённые отклики и запросы:{" "}
-                  <strong>{store.applications.length}</strong>
-                </p>
-                <span>Ожидают подключения сервера.</span>
-              </>
-            ) : (
-              <>
-                <Bell size={32} />
-                <h3>Пока тихо</h3>
-                <span>Новых уведомлений нет.</span>
-              </>
-            )}
-          </div>
-        </Modal>
-      )}
-      {store.toast && (
-        <div className="toast" role="status">
-          <span className="tiny-dot" />
-          {store.toast}
-          <button
-            className="icon-btn"
-            aria-label="Скрыть уведомление"
-            onClick={() => store.setToast("")}
-          >
-            <X size={14} />
-          </button>
-        </div>
-      )}
-    </div>
+    </>
   );
 }
 export function App() {

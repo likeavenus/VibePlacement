@@ -1,25 +1,27 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import {
-  Check,
-  Search,
-  SlidersHorizontal,
-  X,
-} from "lucide-react";
+import { Check, Search, SlidersHorizontal, X, Plus } from "lucide-react";
 import { useStore } from "../../app/store";
 import { WorkCard, ProjectCard } from "../../components/Cards";
 import { creatorById } from "../../data/mock";
 import { t } from "../../i18n";
 import { genres, stages, projectMeta } from "../../data/projects";
+import { categoryIds } from "../../data/categories";
 export function Marketplace({
   favoritesOnly = false,
+  projectsOnly = false,
+  onRecruit,
+  onPublish,
 }: {
   favoritesOnly?: boolean;
+  projectsOnly?: boolean;
+  onRecruit?: () => void;
+  onPublish?: () => void;
 }) {
   const [params, setParams] = useSearchParams(),
     store = useStore();
   const mode =
-    !favoritesOnly && params.get("mode") === "projects"
+    !favoritesOnly && (projectsOnly || params.get("mode") === "projects")
       ? "projects"
       : "services";
   const category = params.get("category") ?? "all",
@@ -96,44 +98,47 @@ export function Marketplace({
             {favoritesOnly
               ? t("favorites")
               : mode === "projects"
-                ? "Найди команду"
-                : "Всё для твоей игры"}
+                ? "Найти проект"
+                : "Ассеты и услуги"}
             <span className="heading-dot">.</span>
           </h1>
           <p>
             {favoritesOnly
               ? `${store.favorites.length} сохранённых работ`
               : mode === "projects"
-                ? "Выбери жанр и свою роль."
-                : "Работы креаторов и люди в команду."}
+                ? "Выбери игру, роль и условия участия."
+                : "Готовые материалы для игры и работа на заказ."}
           </p>
         </div>
+        {onRecruit && (
+          <button className="secondary-btn" onClick={onRecruit}>
+            <Plus size={17} />
+            Объявить набор
+          </button>
+        )}
+        {onPublish && (
+          <button className="secondary-btn" onClick={onPublish}>
+            <Plus size={17} />
+            Опубликовать работу
+          </button>
+        )}
       </div>
-      {!favoritesOnly && (
-        <div
-          className="market-tabs"
-          role="tablist"
-          aria-label="Режим маркетплейса"
-        >
-          <button
-            role="tab"
-            aria-selected={mode === "services"}
-            className={mode === "services" ? "active" : ""}
-            onClick={() => change("mode", "")}
-          >
-            Работы
-          </button>
-          <button
-            role="tab"
-            aria-selected={mode === "projects"}
-            className={mode === "projects" ? "active" : ""}
-            onClick={() => change("mode", "projects")}
-          >
-            Игры
-          </button>
-        </div>
-      )}
       <div className="search-row">
+        <select
+          className="direction-select"
+          aria-label="Направление работ"
+          value={category}
+          onChange={(e) =>
+            change("category", e.target.value === "all" ? "" : e.target.value)
+          }
+        >
+          <option value="all">Все направления</option>
+          {categoryIds.map((id) => (
+            <option key={id} value={id}>
+              {t(id)}
+            </option>
+          ))}
+        </select>
         <label className="search-field">
           <Search size={18} />
           <input

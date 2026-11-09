@@ -46,6 +46,7 @@ export interface Work {
   description: string;
 }
 export interface Project {
+  gameId?: string;
   meta?: import("zod").infer<typeof import("./projects").projectMetaSchema>;
   links?: import("./projects").ProjectLink[];
   id: string;

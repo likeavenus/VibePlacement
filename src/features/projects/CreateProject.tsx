@@ -7,17 +7,28 @@ import type { Category } from "../../data/types";
 import { t } from "../../i18n";
 import { categoryIds } from "../../data/categories";
 import { genres, stages, type Genre, type Stage } from "../../data/projects";
-export function CreateProject({ onClose }: { onClose: () => void }) {
+import type { Game } from "../../data/product";
+export function CreateProject({
+  onClose,
+  game,
+}: {
+  onClose: () => void;
+  game?: Game;
+}) {
   const store = useStore(),
     navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [genre, setGenre] = useState<Genre>("adventure"),
+  const [genre, setGenre] = useState<Genre>(
+      (Object.keys(genres).find(
+        (id) => genres[id as Genre] === game?.genre,
+      ) as Genre) ?? "adventure",
+    ),
     [stage, setStage] = useState<Stage>("idea"),
-    [engine, setEngine] = useState("Godot 4"),
+    [engine, setEngine] = useState(game?.engine ?? "Godot 4"),
     [platform, setPlatform] = useState("PC"),
     [goal, setGoal] = useState("");
-  const [title, setTitle] = useState(""),
-    [description, setDescription] = useState(""),
+  const [title, setTitle] = useState(game?.title ?? ""),
+    [description, setDescription] = useState(game?.description ?? ""),
     [category, setCategory] = useState<Category>("art");
   const [payment, setPayment] = useState<"fixed" | "revshare">("fixed"),
     [budget, setBudget] = useState("30000"),
@@ -68,6 +79,7 @@ export function CreateProject({ onClose }: { onClose: () => void }) {
     const id = crypto.randomUUID();
     const saved = store.addProject({
       id,
+      gameId: game?.id,
       meta: {
         genre,
         stage,

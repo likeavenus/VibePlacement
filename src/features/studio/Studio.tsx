@@ -28,9 +28,9 @@ export function Studio() {
         <div>
           <div className="eyebrow">СОЗДАВАЙ ТО, ЧТО НУЖНО ИГРАМ</div>
           <h1>
-            Мастерская<span className="heading-dot">.</span>
+            Мои публикации<span className="heading-dot">.</span>
           </h1>
-          <p>Работы, разговоры и новые возможности.</p>
+          <p>Портфолио, услуги и ассеты на продажу.</p>
         </div>
         <button className="primary-btn" onClick={() => setPublish(true)}>
           <Plus size={17} />
@@ -158,7 +158,7 @@ export function Library() {
           </h1>
           <p>Приобретённые работы для твоих игр.</p>
         </div>
-        <Link className="secondary-btn" to="/">
+        <Link className="secondary-btn" to="/market">
           К работам
           <ArrowUpRight size={16} />
         </Link>
@@ -173,7 +173,7 @@ export function Library() {
         <div className="empty-state">
           <ShoppingBag size={35} />
           <h2>Здесь появятся твои ассеты</h2>
-          <Link className="primary-btn" to="/?category=art">
+          <Link className="primary-btn" to="/market?category=art">
             Найти первую работу
             <ArrowUpRight size={16} />
           </Link>

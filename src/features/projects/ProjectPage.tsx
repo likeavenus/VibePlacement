@@ -74,7 +74,7 @@ export function ProjectPage() {
     return (
       <div className="empty-state">
         <h1>Проект не найден</h1>
-        <Link className="secondary-btn" to="/?mode=projects">
+        <Link className="secondary-btn" to="/discover">
           К поиску команд
         </Link>
       </div>
@@ -104,8 +104,12 @@ export function ProjectPage() {
   }
   return (
     <div className="project-page">
-      <Link to="/?mode=projects" className="back-link">
-        <ArrowLeft size={17} /> Найти команду
+      <Link
+        to={own && project.gameId ? `/games/${project.gameId}` : "/discover"}
+        className="back-link"
+      >
+        <ArrowLeft size={17} />{" "}
+        {own && project.gameId ? "К задачам игры" : "Найти проект"}
       </Link>
       <div className="project-page-heading">
         <div>

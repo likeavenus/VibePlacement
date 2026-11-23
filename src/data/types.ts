@@ -7,7 +7,8 @@ export type Category =
   | "audio"
   | "art"
   | "writing"
-  | "animation";
+  | "animation"
+  | "game";
 export type ViewerKind =
   | "model"
   | "image"
@@ -17,8 +18,14 @@ export type ViewerKind =
   | "pixel"
   | "script"
   | "video"
-  | "spine";
+  | "spine"
+  | "game";
 export interface Creator {
+  avatar?: string;
+  cover?: string;
+  availability?: "open" | "limited" | "busy";
+  location?: string;
+  specialties?: import("./people").Specialty[];
   id: string;
   name: string;
   handle: string;
@@ -34,6 +41,11 @@ export interface Work {
   assetId?: string;
   saleType?: "service" | "asset" | "showcase";
   animations?: string[];
+  gamePage?: {
+    videoUrl?: string;
+    platform: string;
+    version: string;
+  };
   id: string;
   title: string;
   category: Category;
@@ -55,7 +67,9 @@ export interface Project {
   category: Category;
   tags: string[];
   roles: string[];
-  payment: "fixed" | "revshare";
+  filledRoles?: { role: string; assignee: string }[];
+  roleOffers?: { role: string; amount: number }[];
+  payment: "fixed" | "revshare" | "mixed";
   budget: number;
   members: number;
   slots: number;

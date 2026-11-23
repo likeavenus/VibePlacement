@@ -1,11 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Film, LoaderCircle } from "lucide-react";
+import { Film, Image as ImageIcon, LoaderCircle } from "lucide-react";
 import type { ViewerKind } from "../../data/types";
-import { PixelScene } from "./PixelScene";
 import { getBundle, type AssetBundle } from "../../data/assets";
 import { BundleViewer } from "./BundleViewer";
 import { DesignPreview, MotionPreview } from "./CreativePreview";
-import { publicAsset } from "../../data/urls";
 const SpineViewer = lazy(() => import("./SpineViewer"));
 const ModelViewer = lazy(() => import("./ModelViewer"));
 const AudioViewer = lazy(() => import("./AudioViewer"));
@@ -100,26 +98,13 @@ export function Viewer({
         ) : kind === "motion" ? (
           <MotionPreview />
         ) : kind === "pixel" ? (
-          <>
-            <PixelScene />
-            <span className="viewer-badge">16-BIT / WOODLAND</span>
-          </>
+          <div className="viewer-fallback viewer-placeholder"><ImageIcon size={34} strokeWidth={1.35} /><span>Превью появится после загрузки</span></div>
         ) : kind === "script" ? (
           <StoryViewer />
+        ) : kind === "game" ? (
+          <div className="game-bundle-placeholder">ИГРА</div>
         ) : (
-          <>
-            <video
-              controls
-              playsInline
-              preload="metadata"
-              poster={publicAsset("assets/flower-poster.jpg")}
-              src={publicAsset("assets/flower.mp4")}
-              aria-label="Видео: маленькая жизнь"
-            />
-            <span className="viewer-badge">
-              <Film size={12} /> MOOD FILM
-            </span>
-          </>
+          <div className="viewer-fallback viewer-placeholder"><Film size={34} strokeWidth={1.35} /><span>Видео появится после загрузки</span></div>
         )}
       </Suspense>
     </div>

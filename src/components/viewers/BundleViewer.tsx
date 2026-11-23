@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, LoaderCircle } from "lucide-react";
 import type { AssetBundle } from "../../data/assets";
 import { readStory, type Story } from "../../data/story";
+import "../../features/studio/game-release.css";
 const UploadedModel = lazy(() => import("./UploadedModel"));
 const AudioViewer = lazy(() => import("./AudioViewer"));
 const ImageViewer = lazy(() => import("./ImageViewer"));
@@ -18,7 +19,7 @@ export function BundleViewer({ bundle }: { bundle: AssetBundle }) {
     setStory(undefined);
     const next = ["image", "audio", "video"].includes(bundle.kind)
       ? bundle.files.map((file) => URL.createObjectURL(file))
-      : [];
+      : bundle.kind === "game" && bundle.cover ? [URL.createObjectURL(bundle.cover)] : [];
     setUrls(next);
     if (bundle.kind === "script")
       readStory(bundle.files[0])
@@ -46,7 +47,12 @@ export function BundleViewer({ bundle }: { bundle: AssetBundle }) {
     );
   return (
     <Suspense fallback={loading}>
-      {bundle.kind === "model" ? (
+      {bundle.kind === "game" ? (
+        <div className="game-bundle-preview">
+          {urls[0] ? <img src={urls[0]} alt="Обложка игры" /> : <div className="game-bundle-placeholder">ИГРА</div>}
+          <span>Сборка для скачивания</span>
+        </div>
+      ) : bundle.kind === "model" ? (
         <UploadedModel file={bundle.files[0]} />
       ) : bundle.kind === "script" ? (
         story ? (

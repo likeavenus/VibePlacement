@@ -20,13 +20,9 @@
   margin: 0 auto;
 }
 .start-page .page-heading {
-  margin-bottom: 36px;
+  margin-bottom: 22px;
 }
-.start-page .page-heading p {
-  max-width: 660px;
-  font-size: 18px;
-  line-height: 1.6;
-}
+.start-beta { display: inline-block; margin-bottom: 8px; color: var(--ui-link); font-size: 13px; font-weight: 600; }
 .start-paths {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -51,14 +47,6 @@
   color: #2e2a28;
   margin: 0 0 10px;
 }
-.start-path p {
-  color: #706863;
-  font-size: 17px;
-  line-height: 1.6;
-  max-width: 340px;
-  min-height: 55px;
-  margin: 0 0 24px;
-}
 .start-path > .primary-btn,
 .start-path > .secondary-btn {
   min-height: 46px;
@@ -82,62 +70,6 @@
 }
 .path-link:hover {
   color: #bd493f;
-}
-.path-sequence {
-  display: block;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #78706c;
-}
-.start-continue {
-  padding-top: 30px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
-  align-items: center;
-}
-.start-continue h2 {
-  font-size: 20px;
-  color: #2e2a28;
-  margin: 0 0 8px;
-}
-.start-continue p {
-  font-size: 16px;
-  line-height: 1.6;
-  color: #706863;
-  max-width: 340px;
-}
-.continue-game {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 0;
-}
-.continue-art {
-  width: 100px;
-  height: 78px;
-  overflow: hidden;
-  border-radius: 6px;
-  flex-shrink: 0;
-  position: relative;
-}
-.continue-game span {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-}
-.continue-game small {
-  font-size: 14px;
-  color: #756f6c;
-}
-.continue-game strong {
-  font-size: 17px;
-  color: #2e2a28;
-  overflow-wrap: anywhere;
-}
-.continue-game > svg {
-  color: #bd493f;
-  flex-shrink: 0;
 }
 .game-next-steps {
   display: grid;
@@ -180,6 +112,90 @@
 }
 .game-workspace-heading p {
   color: #706863;
+}
+.app-shell
+  .modal
+  :is(
+    .project-form,
+    .publish-form,
+    .task-form,
+    .story-editor,
+    .comments-section,
+    .checkout-form
+  )
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea
+  ) {
+  color: #302b28;
+  background-color: #fff;
+  border-color: #dcd6d1;
+  color-scheme: light;
+}
+.app-shell
+  .modal
+  :is(
+    .project-form,
+    .publish-fields,
+    .task-form,
+    .story-editor,
+    .comments-section,
+    .checkout-form
+  )
+  :is(input, textarea)::placeholder {
+  color: #8d8580;
+}
+.app-shell
+  .modal
+  :is(
+    .project-form label,
+    .publish-form label,
+    .task-form label,
+    .story-editor label,
+    .checkout-form label
+  ) {
+  color: #625b56;
+}
+.app-shell
+  .modal
+  :is(
+    .project-form,
+    .publish-fields,
+    .task-form,
+    .story-editor,
+    .comments-section,
+    .checkout-form
+  )
+  :is(input, select, textarea):focus {
+  border-color: #bd756d;
+}
+.sidebar-directions summary small,
+.category-nav small,
+.personal-nav small,
+.sidebar-footnote {
+  display: none !important;
+}
+.heading-dot {
+  display: none;
+}
+.app-shell .modal input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
+.app-shell .modal select,
+.app-shell .modal textarea {
+  color: #302b28;
+  background-color: #fff;
+  border-color: #dcd6d1;
+  color-scheme: light;
+}
+.app-shell .modal input::placeholder,
+.app-shell .modal textarea::placeholder {
+  color: #8d8580;
+}
+.app-shell .modal :is(input, select, textarea):focus {
+  border-color: #bd756d;
+}
+.app-shell .modal label {
+  color: #625b56;
 }
 .empty-state h2,
 .empty-state h3 {
@@ -339,11 +355,7 @@
   .start-page .page-heading h1 {
     font-size: 30px;
   }
-  .start-page .page-heading p {
-    font-size: 17px;
-  }
-  .start-paths,
-  .start-continue {
+  .start-paths {
     grid-template-columns: 1fr;
   }
   .start-path,
@@ -357,11 +369,6 @@
   .start-path h2 {
     font-size: 24px;
   }
-  .start-path p {
-    min-height: 0;
-    max-width: none;
-    margin-bottom: 18px;
-  }
   .path-icon {
     margin-bottom: 12px;
   }
@@ -369,9 +376,6 @@
   .start-path > .secondary-btn,
   .path-link {
     max-width: none;
-  }
-  .start-continue {
-    gap: 8px;
   }
   .guide-panel {
     padding: 18px 20px;

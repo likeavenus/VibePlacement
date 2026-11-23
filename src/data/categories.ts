@@ -7,6 +7,7 @@ import {
   Clapperboard,
   ScrollText,
   Shapes,
+  Gamepad2,
 } from "lucide-react";
 import type { Category } from "./types";
 
@@ -16,7 +17,7 @@ export const directions = [
     icon: Box,
     accept: ".glb,.fbx,.obj",
     formats: "GLB / FBX / OBJ",
-    hint: "Одна модель · встроенные текстуры · до 30 МБ",
+    hint: "Одна модель, встроенные текстуры, до 30 МБ",
     kind: "model",
   },
   {
@@ -24,7 +25,7 @@ export const directions = [
     icon: Shapes,
     accept: ".png,.jpg,.jpeg,.webp",
     formats: "PNG / JPG / WebP",
-    hint: "До 8 изображений · до 30 МБ",
+    hint: "До 8 изображений, до 30 МБ",
     kind: "image",
   },
   {
@@ -32,7 +33,7 @@ export const directions = [
     icon: Bone,
     accept: ".json,.atlas,.png",
     formats: "JSON + atlas + PNG",
-    hint: "Экспорт Spine 4.2 · до 30 МБ",
+    hint: "Экспорт Spine 4.2, до 30 МБ",
     kind: "spine",
   },
   {
@@ -40,7 +41,7 @@ export const directions = [
     icon: Clapperboard,
     accept: ".mp4,.webm,.gif",
     formats: "MP4 / WebM / GIF",
-    hint: "Ролик или анимация · до 30 МБ",
+    hint: "Ролик или анимация, до 30 МБ",
     kind: "video",
   },
   {
@@ -48,7 +49,7 @@ export const directions = [
     icon: LayoutTemplate,
     accept: ".png,.jpg,.jpeg,.webp",
     formats: "PNG / JPG / WebP",
-    hint: "До 8 экранов интерфейса · до 30 МБ",
+    hint: "До 8 экранов интерфейса, до 30 МБ",
     kind: "image",
   },
   {
@@ -56,7 +57,7 @@ export const directions = [
     icon: Film,
     accept: ".mp4,.webm",
     formats: "MP4 / WebM",
-    hint: "Один видеоролик · до 30 МБ",
+    hint: "Один видеоролик, до 30 МБ",
     kind: "video",
   },
   {
@@ -64,7 +65,7 @@ export const directions = [
     icon: AudioLines,
     accept: ".wav,.mp3,.ogg,.flac",
     formats: "WAV / MP3 / OGG / FLAC",
-    hint: "Одна дорожка · до 30 МБ",
+    hint: "Одна дорожка, до 30 МБ",
     kind: "audio",
   },
   {
@@ -72,8 +73,16 @@ export const directions = [
     icon: ScrollText,
     accept: ".txt,.md,.json",
     formats: "TXT / Markdown / JSON",
-    hint: "UTF-8 · до 100 000 знаков · JSON из редактора сцен",
+    hint: "UTF-8, до 100 000 знаков. JSON из редактора сцен",
     kind: "script",
+  },
+  {
+    id: "game",
+    icon: Gamepad2,
+    accept: ".zip,.exe,.msi,.dll,.pck,.pak,.dat,.bin,.cfg,.ini,.json,.txt,.png,.jpg,.jpeg,.webp,.ogg,.wav,.mp3",
+    formats: "ZIP / EXE / MSI",
+    hint: "До 200 МБ. Файлы будут скачиваться, сайт их не запускает.",
+    kind: "game",
   },
 ] as const;
 export const categoryIds = directions.map(({ id }) => id);

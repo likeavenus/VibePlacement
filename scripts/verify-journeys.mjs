@@ -100,6 +100,14 @@ try {
     "First visit opens guide and makes background inert",
     await page.locator(".app-shell").evaluate((el) => el.inert),
   );
+  check(
+    "Start screen has no sample continuation or redundant copy",
+    (await page.locator(".start-continue").count()) === 0 &&
+      (await page.locator(".start-path p, .path-sequence").count()) === 0 &&
+      !(await page.locator("#main-content").innerText()).includes(
+        "Продолжить свою игру",
+      ),
+  );
   await page.screenshot({ path: "artifacts/journey-guide-welcome.png" });
   await page.getByRole("button", { name: "Дальше", exact: true }).click();
   await spotlight("Maker CTA highlighted without panel overlap");
@@ -110,6 +118,20 @@ try {
     .click();
   const newGame = page.getByRole("dialog", { name: "Новая игра" });
   await newGame.waitFor();
+  check(
+    "Game creation fields stay light",
+    await newGame
+      .locator(
+        ".project-form input, .project-form textarea, .project-form select",
+      )
+      .evaluateAll((fields) =>
+        fields.every(
+          (field) =>
+            getComputedStyle(field).backgroundColor === "rgb(255, 255, 255)" &&
+            getComputedStyle(field).color === "rgb(48, 43, 40)",
+        ),
+      ),
+  );
   check("Guide finishes on real game creation");
   await newGame.getByLabel("Название игры").fill("Тестовый остров");
   await newGame
@@ -119,11 +141,27 @@ try {
   await page.locator(".game-workspace-heading h1").waitFor();
   const workspace = page.url();
   check(
-    "Created game has a task workspace and explicit next steps",
-    (await page.locator(".game-next-steps > *").count()) === 3,
+    "Game workspace has three distinct next actions",
+    (await page.locator(".game-next-steps > *").count()) === 3 &&
+      (await page.locator(".game-next-steps small").count()) === 0 &&
+      (await page.locator(".game-workspace-heading > button").count()) === 0 &&
+      (await page.locator(".workspace-bottom").count()) === 0,
   );
   await page.locator(".game-next-steps").getByRole("button").first().click();
   const task = page.getByRole("dialog", { name: "Новая задача" });
+  check(
+    "Task editor fields stay light",
+    await task
+      .locator(
+        ".project-form input, .project-form textarea, .project-form select",
+      )
+      .evaluateAll((fields) =>
+        fields.every(
+          (field) =>
+            getComputedStyle(field).backgroundColor === "rgb(255, 255, 255)",
+        ),
+      ),
+  );
   await task.getByLabel("Сущность / название").fill("Анимация героя");
   await task
     .getByLabel("Требования", { exact: true })
@@ -134,6 +172,19 @@ try {
     .waitFor();
   await page.locator(".game-next-steps").getByRole("button").last().click();
   const recruit = page.getByRole("dialog", { name: "Собрать команду" });
+  check(
+    "Recruitment fields stay light",
+    await recruit
+      .locator(
+        ".project-form input, .project-form textarea, .project-form select",
+      )
+      .evaluateAll((fields) =>
+        fields.every(
+          (field) =>
+            getComputedStyle(field).backgroundColor === "rgb(255, 255, 255)",
+        ),
+      ),
+  );
   check(
     "Recruitment prefills the existing game",
     (await recruit.getByLabel("Название проекта").inputValue()) ===
@@ -149,12 +200,12 @@ try {
   );
   await page.reload();
   await page.locator(".back-link").click();
-  await page.getByRole("link", { name: /Открыть своё объявление/ }).waitFor();
+  await page.getByRole("link", { name: /Открыть набор/ }).waitFor();
   check(
     "Game and recruitment stay connected after reload",
     page.url() === workspace &&
       (await page
-        .getByRole("link", { name: /Открыть своё объявление/ })
+        .getByRole("link", { name: /Открыть набор/ })
         .count()) === 1,
   );
   await page.screenshot({

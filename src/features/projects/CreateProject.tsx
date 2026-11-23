@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, Check, Plus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../../components/Modal";
+import { UiSelect } from "../../components/UiSelect";
 import { useStore } from "../../app/store";
 import type { Category } from "../../data/types";
 import { t } from "../../i18n";
@@ -30,16 +31,17 @@ export function CreateProject({
   const [title, setTitle] = useState(game?.title ?? ""),
     [description, setDescription] = useState(game?.description ?? ""),
     [category, setCategory] = useState<Category>("art");
-  const [payment, setPayment] = useState<"fixed" | "revshare">("fixed"),
-    [budget, setBudget] = useState("30000"),
+  const [payment, setPayment] = useState<"fixed" | "revshare" | "mixed">(game?.payment ?? "fixed"),
     [role, setRole] = useState(""),
-    [roles, setRoles] = useState<string[]>([]),
+    [roles, setRoles] = useState<string[]>(game?.team?.filter((slot) => !slot.assignee).map((slot) => slot.role) ?? []),
+    [roleOffers, setRoleOffers] = useState<Record<string, string>>(() => Object.fromEntries((game?.team ?? []).filter((slot) => !slot.assignee).map((slot) => [slot.role, ""]))),
     [tags, setTags] = useState("");
   const [error, setError] = useState("");
   const addRole = () => {
     const next = role.trim();
-    if (next && !roles.includes(next) && roles.length < 8) {
+    if (next && !roles.includes(next) && roles.length < 30) {
       setRoles([...roles, next]);
+      setRoleOffers({ ...roleOffers, [next]: "" });
       setRole("");
       setError("");
     }
@@ -55,25 +57,17 @@ export function CreateProject({
       setStep(2);
       return;
     }
-    const finalRoles =
-      role.trim() && !roles.includes(role.trim())
-        ? [...roles, role.trim()]
-        : roles;
+    if (role.trim() && !roles.includes(role.trim())) {
+      setError("Добавьте роль кнопкой +.");
+      return;
+    }
+    const finalRoles = roles;
     if (!finalRoles.length) {
       setError("Добавьте хотя бы одну роль.");
       return;
-    }
-    const amount = Number(budget);
-    if (
-      !Number.isFinite(amount) ||
-      amount <= 0 ||
-      (payment === "revshare" && amount > 100)
-    ) {
-      setError(
-        payment === "revshare"
-          ? "Доля должна быть от 1 до 100%."
-          : "Укажите положительный бюджет.",
-      );
+      }
+    if (payment === "fixed" && finalRoles.some((item) => !(Number(roleOffers[item]) > 0))) {
+      setError("Укажите оплату для каждой роли.");
       return;
     }
     const id = crypto.randomUUID();
@@ -95,11 +89,13 @@ export function CreateProject({
         .map((x) => x.trim())
         .filter(Boolean)
         .slice(0, 4),
-      roles: finalRoles.slice(0, 8),
+      roles: finalRoles.slice(0, 30),
+      roleOffers: payment !== "revshare" ? finalRoles.filter((item) => Number(roleOffers[item]) > 0).slice(0, 30).map((item) => ({ role: item, amount: Number(roleOffers[item]) })) : [],
+      filledRoles: game?.team?.filter((slot) => slot.assignee).map(({ role, assignee }) => ({ role, assignee })),
       payment,
-      budget: amount,
-      members: 1,
-      slots: finalRoles.length + 1,
+      budget: 0,
+      members: 1 + (game?.team?.filter((slot) => slot.assignee).length ?? 0),
+      slots: finalRoles.length + (game?.team?.filter((slot) => slot.assignee).length ?? 0) + 1,
       creatorId: "denis",
       art:
         category === "art"
@@ -150,44 +146,30 @@ export function CreateProject({
             </label>
             <label>
               Направление
-              <select
+              <UiSelect
+                ariaLabel="Направление"
                 value={category}
-                onChange={(e) => setCategory(e.target.value as Category)}
-              >
-                {categoryIds.map((id) => (
-                  <option key={id} value={id}>
-                    {t(id)}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setCategory(value as Category)}
+                options={categoryIds.map((id) => ({ value: id, label: t(id) }))}
+              />
             </label>
             <label>
               Жанр игры
-              <select
-                aria-label="Жанр игры"
+              <UiSelect
+                ariaLabel="Жанр игры"
                 value={genre}
-                onChange={(e) => setGenre(e.target.value as Genre)}
-              >
-                {Object.entries(genres).map(([id, label]) => (
-                  <option key={id} value={id}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setGenre(value as Genre)}
+                options={Object.entries(genres).map(([id, label]) => ({ value: id, label }))}
+              />
             </label>
             <label>
               Этап
-              <select
-                aria-label="Этап проекта"
+              <UiSelect
+                ariaLabel="Этап проекта"
                 value={stage}
-                onChange={(e) => setStage(e.target.value as Stage)}
-              >
-                {Object.entries(stages).map(([id, label]) => (
-                  <option key={id} value={id}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setStage(value as Stage)}
+                options={Object.entries(stages).map(([id, label]) => ({ value: id, label }))}
+              />
             </label>
             <label>
               Движок
@@ -234,7 +216,7 @@ export function CreateProject({
               <div className="inline-input">
                 <input
                   value={role}
-                  maxLength={50}
+                  maxLength={80}
                   onChange={(e) => setRole(e.target.value)}
                   placeholder="Например, 3D-художник"
                   onKeyDown={(e) => {
@@ -268,6 +250,10 @@ export function CreateProject({
                 </span>
               ))}
             </div>
+            {payment !== "revshare" && <fieldset className="project-role-offers">
+              <legend>{payment === "mixed" ? "Оплата разовых работ, ₽ (если известна)" : "Оплата за работу, ₽"}</legend>
+              {roles.map((item) => <label key={item}>{item}<input type="number" min="1" max="10000000" value={roleOffers[item] ?? ""} onChange={(event) => setRoleOffers({ ...roleOffers, [item]: event.target.value })} /></label>)}
+            </fieldset>}
             <fieldset>
               <legend>Формат участия</legend>
               <div className="segmented payment-toggle">
@@ -276,7 +262,6 @@ export function CreateProject({
                   className={payment === "fixed" ? "active" : ""}
                   onClick={() => {
                     setPayment("fixed");
-                    setBudget("30000");
                   }}
                 >
                   Фиксированная оплата
@@ -286,24 +271,14 @@ export function CreateProject({
                   className={payment === "revshare" ? "active" : ""}
                   onClick={() => {
                     setPayment("revshare");
-                    setBudget("15");
                   }}
                 >
                   RevShare
                 </button>
+                <button type="button" className={payment === "mixed" ? "active" : ""} onClick={() => setPayment("mixed")}>Комбинированный</button>
               </div>
             </fieldset>
-            <label>
-              {payment === "fixed" ? "Бюджет, ₽" : "Доля от выручки, %"}
-              <input
-                required
-                type="number"
-                min="1"
-                max={payment === "revshare" ? 100 : 100000000}
-                value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-              />
-            </label>
+            <p className="form-note">{payment === "mixed" ? "Для каждой роли можно согласовать свои условия: постоянное участие, разовый заказ или долю." : payment === "fixed" ? "Стоимость будет указана в каждой отдельной задаче." : "Размер доли согласуется отдельно с каждым участником."}</p>
           </>
         )}
         {error && (
@@ -327,9 +302,7 @@ export function CreateProject({
             <ArrowRight size={16} />
           </button>
         </div>
-        <p className="form-note">
-          Локальное демо. Проект будет доступен только в этом браузере.
-        </p>
+        <p className="form-note">Сохранится в браузере.</p>
       </form>
     </Modal>
   );
@@ -358,7 +331,7 @@ export function ProposeCategory({ onClose }: { onClose: () => void }) {
             return;
           }
           store.proposeCategory(clean);
-          store.setToast("Предложение сохранено локально");
+          store.setToast("Предложение сохранено в браузере");
           onClose();
         }}
       >
@@ -379,11 +352,10 @@ export function ProposeCategory({ onClose }: { onClose: () => void }) {
         )}
         <button className="primary-btn" type="submit">
           <Plus size={16} />
-          Предложить категорию
+          Сохранить предложение
         </button>
         <p className="form-note">
-          Локальная заявка на модерацию. Отправка модераторам появится после
-          подключения сервера.
+          Сохранится в браузере. Модераторам не отправляется.
         </p>
         {store.categories.length > 0 && (
           <div className="pending-categories">
@@ -391,7 +363,7 @@ export function ProposeCategory({ onClose }: { onClose: () => void }) {
             {store.categories.map((category) => (
               <div key={category}>
                 <span>{category}</span>
-                <small>Ожидает отправки</small>
+                <small>Черновик</small>
               </div>
             ))}
           </div>

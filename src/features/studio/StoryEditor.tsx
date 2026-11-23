@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { newScene, type Story, type Scene } from "../../data/story";
+import { UiSelect } from "../../components/UiSelect";
 
 export function StoryEditor({
   value,
@@ -101,7 +102,7 @@ export function StoryEditor({
             <input
               maxLength={160}
               aria-label="Место и время"
-              placeholder="ИНТ. ЗАЛ ОЖИДАНИЯ · ВЕЧЕР"
+              placeholder="Зал ожидания, вечер"
               value={scene.location}
               onChange={(e) => update(scene.id, { location: e.target.value })}
             />
@@ -137,20 +138,14 @@ export function StoryEditor({
           </label>
           <label>
             Переход
-            <select
+            <UiSelect
+              ariaLabel="Переход"
               value={scene.next}
-              aria-label="Переход"
-              onChange={(e) => update(scene.id, { next: e.target.value })}
-            >
-              <option value="">Финал / без перехода</option>
-              {value.scenes
+              onChange={(next) => update(scene.id, { next })}
+              options={[{ value: "", label: "Финал / без перехода" }, ...value.scenes
                 .filter((s) => s.id !== scene.id)
-                .map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.title}
-                  </option>
-                ))}
-            </select>
+                .map((s) => ({ value: s.id, label: s.title }))]}
+            />
           </label>
         </fieldset>
       ))}

@@ -1,23 +1,28 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useRef,
   useState,
   type ReactNode,
 } from "react";
 import { z } from "zod";
-import { seedProjects, works } from "../data/mock";
+import { seedProjects, works, creators } from "../data/mock";
+import { profileSettingsSchema, type ProfileSettings } from "../data/people";
 import {
   categorySchema,
   commentSchema,
   gameSchema,
+  gameDocumentSchema,
   purchaseSchema,
   seedComments,
   seedGames,
   type Game,
   type GameTask,
+  type GameDocument,
+  type GameStoryEntity,
 } from "../data/product";
-import type { Project, Work } from "../data/types";
+import type { Creator, Project, Work } from "../data/types";
 import {
   agreementSchema,
   responseSchema,
@@ -42,6 +47,7 @@ const workSchema = z.object({
     "script",
     "video",
     "spine",
+    "game",
   ]),
   creatorId: z.string(),
   price: z.number().nonnegative(),
@@ -52,6 +58,11 @@ const workSchema = z.object({
   assetId: z.string().optional(),
   saleType: z.enum(["service", "asset", "showcase"]).optional(),
   animations: z.array(z.string()).optional(),
+  gamePage: z.object({
+    videoUrl: z.string().url().optional(),
+    platform: z.string().max(80),
+    version: z.string().max(32),
+  }).optional(),
 });
 const projectSchema = z.object({
   gameId: z.string().optional(),
@@ -63,7 +74,9 @@ const projectSchema = z.object({
   category: categorySchema,
   tags: z.array(z.string()),
   roles: z.array(z.string()),
-  payment: z.enum(["fixed", "revshare"]),
+  filledRoles: z.array(z.object({ role: z.string(), assignee: z.string() })).optional(),
+  roleOffers: z.array(z.object({ role: z.string(), amount: z.number().nonnegative() })).optional(),
+  payment: z.enum(["fixed", "revshare", "mixed"]),
   budget: z.number().finite().nonnegative(),
   members: z.number(),
   slots: z.number(),
@@ -71,6 +84,7 @@ const projectSchema = z.object({
   art: z.enum(["station", "landscape", "code"]),
 });
 const stateSchema = z.object({
+  profile: profileSettingsSchema.optional().catch(undefined),
   agreements: z.array(agreementSchema).default([]),
   projectResponses: z.array(responseSchema).default([]),
   favorites: z.array(z.string()),
@@ -159,6 +173,16 @@ function useStoreValue() {
   const [state, setState] = useState(read),
     current = useRef(state);
   const [toast, setToast] = useState("");
+  useEffect(() => {
+    const sync = (event: StorageEvent) => {
+      if (event.storageArea !== localStorage || event.key !== "vibeplacement:state-v2" || !event.newValue) return;
+      const next = read();
+      current.current = next;
+      setState(next);
+    };
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
   const commit = (update: (previous: State) => State): boolean => {
     const next = update(current.current);
     try {
@@ -172,9 +196,20 @@ function useStoreValue() {
     return true;
   };
   const workList: Work[] = [...state.publications, ...works];
+  const creatorList: Creator[] = creators.map((creator) => creator.id === "denis" && state.profile ? {
+    ...creator, ...state.profile,
+    initials: state.profile.name.split(/\s+/).slice(0, 2).map((part) => Array.from(part)[0]).join("").toLocaleUpperCase("ru"),
+  } : creator);
   return {
     ...state,
     workList,
+    creatorList,
+    creatorById: (id: string) => creatorList.find((creator) => creator.id === id) ?? creatorList[0],
+    saveProfile: (profile: ProfileSettings) => {
+      const result = profileSettingsSchema.safeParse(profile);
+      if (!result.success) { setToast("Проверьте поля профиля"); return false; }
+      return commit((s) => ({ ...s, profile: result.data }));
+    },
     toast,
     setToast,
     toggleFavorite: (id: string) =>
@@ -270,6 +305,38 @@ function useStoreValue() {
       commit((s) => ({ ...s, publications: [work, ...s.publications] })),
     addGame: (game: Game) =>
       commit((s) => ({ ...s, games: [game, ...s.games] })),
+    saveGameDocuments: (gameId: string, documents: GameDocument[]) => {
+      if (!z.array(gameDocumentSchema).safeParse(documents).success) return false;
+      const textContent = (node: GameDocument["content"]["content"][number]): string =>
+        [node.text ?? "", ...(node.content ?? []).map(textContent)].filter(Boolean).join(" ");
+      const description = documents.find((document) => document.id === "overview")?.content.content.map(textContent).join("\n") ?? "";
+      return commit((s) => ({ ...s, games: s.games.map((game) => game.id === gameId ? { ...game, documents, description } : game) }));
+    },
+    saveGameTeam: (gameId: string, team: NonNullable<Game["team"]>) =>
+      commit((s) => ({
+        ...s,
+        games: s.games.map((game) => game.id === gameId ? { ...game, team } : game),
+        projectList: s.projectList.map((project) => project.gameId !== gameId ? project : {
+          ...project,
+          roles: team.filter((slot) => !slot.assignee).map((slot) => slot.role),
+          filledRoles: team.filter((slot) => slot.assignee).map(({ role, assignee }) => ({ role, assignee })),
+          members: 1 + team.filter((slot) => slot.assignee).length,
+          slots: 1 + team.length,
+        }),
+      })),
+    saveGameStoryEntities: (gameId: string, storyEntities: GameStoryEntity[]) =>
+      commit((s) => ({ ...s, games: s.games.map((game) => game.id === gameId ? { ...game, storyEntities } : game) })),
+    saveGameGraph: (gameId: string, graph: NonNullable<Game["graph"]>, newTask?: GameTask) =>
+      commit((s) => ({
+        ...s,
+        games: s.games.map((game) =>
+          game.id === gameId ? { ...game, graph, tasks: [...game.tasks, ...(newTask && !game.tasks.some((task) => task.id === newTask.id) ? [newTask] : [])].map((task) => {
+            const node = graph.nodes.find((node) => node.taskId === task.id);
+            const hasStoryNode = graph.nodes.some((node) => node.id === task.storyNodeId);
+            return { ...task, storyNodeId: task.storyNodeId && hasStoryNode ? task.storyNodeId : undefined, ...(node ? { title: node.title.trim() || task.title, brief: node.description } : {}) };
+          }) } : game,
+        ),
+      })),
     saveTask: (gameId: string, task: GameTask) =>
       commit((s) => ({
         ...s,
@@ -350,7 +417,7 @@ function useStoreValue() {
                     id: crypto.randomUUID(),
                     title: work.title,
                     category: work.category,
-                    brief: "Готовый ассет · демонстрационная покупка",
+                    brief: "Покупка из библиотеки",
                     budget: work.price,
                     status: "done",
                     assignee: work.creatorId,

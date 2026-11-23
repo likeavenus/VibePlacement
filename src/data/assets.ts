@@ -1,8 +1,9 @@
 import { openDB } from "idb";
 export interface AssetBundle {
   id: string;
-  kind: "spine" | "image" | "audio" | "video" | "model" | "script";
+  kind: "spine" | "image" | "audio" | "video" | "model" | "script" | "game";
   files: File[];
+  cover?: File;
 }
 const database = () =>
   openDB("vibeplacement-assets", 1, {
@@ -35,4 +36,11 @@ export function checkFileSize(files: File[]) {
     throw new Error("До 20 файлов и 30 МБ на публикацию.");
   if (new Set(files.map((file) => file.name)).size !== files.length)
     throw new Error("Имена файлов должны быть уникальными.");
+}
+export function checkGameFileSize(files: File[]) {
+  if (!files.length) throw new Error("Добавьте сборку игры.");
+  if (files.length > 10 || files.reduce((sum, file) => sum + file.size, 0) > 200 * 1024 * 1024)
+    throw new Error("Для сборки: до 10 файлов общим размером до 200 МБ.");
+  if (new Set(files.map((file) => file.name.toLowerCase())).size !== files.length)
+    throw new Error("Имена файлов сборки должны быть уникальными.");
 }

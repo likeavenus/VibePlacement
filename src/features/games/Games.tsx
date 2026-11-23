@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { lazy, Suspense, useState, type FormEvent } from "react";
 import {
   Link,
   useNavigate,
@@ -11,43 +11,51 @@ import {
   Check,
   ChevronRight,
   ClipboardList,
-  Gamepad2,
   Plus,
   Search,
   Trash2,
-  Wallet,
   X,
   Users,
+  Image as ImageIcon,
+  UserRound,
 } from "lucide-react";
 import { useStore } from "../../app/store";
-import { money, creators } from "../../data/mock";
+import { money } from "../../data/mock";
 import { taskStatus, type Game, type GameTask } from "../../data/product";
 import type { Category } from "../../data/types";
 import { Modal } from "../../components/Modal";
-import { PixelScene } from "../../components/viewers/PixelScene";
 import { Viewer } from "../../components/viewers/Viewer";
 import { t } from "../../i18n";
 import { categoryIds } from "../../data/categories";
 import { CreateProject } from "../projects/CreateProject";
 import { genres } from "../../data/projects";
+import { GameOnboarding } from "./GameOnboarding";
+import { GamePlan } from "./GameFlow";
+import { UiSelect } from "../../components/UiSelect";
+const GameDocuments = lazy(() => import("./GameDocuments"));
 export const taskCategories = categoryIds;
+function GameCover({ source }: { source?: string }) {
+  const [failedSource, setFailedSource] = useState<string>();
+  return <div className="game-thumbnail">
+    {source && source !== failedSource
+      ? <img className="game-cover-image" src={source} alt="" loading="lazy" decoding="async" onError={() => setFailedSource(source)} />
+      : <div className="game-cover-placeholder" role="img" aria-label="Обложка не добавлена"><ImageIcon size={36} strokeWidth={1.3} aria-hidden="true" /></div>}
+  </div>;
+}
 export function Games() {
   const store = useStore();
   const [params, setParams] = useSearchParams();
   const create = params.get("new") === "1";
-  const setCreate = (open: boolean) =>
-    setParams(open ? { new: "1" } : {}, { replace: true });
+  const setCreate = (open: boolean) => {
+    const next = new URLSearchParams(params);
+    if (open) next.set("new", "1"); else next.delete("new");
+    setParams(next, { replace: true });
+  };
   return (
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">
-            <span className="tiny-dot" /> ОТ ПЕРВОЙ ИДЕИ ДО РЕЛИЗА
-          </div>
-          <h1>
-            Мои игры<span className="heading-dot">.</span>
-          </h1>
-          <p>Запланируй работы, подбери материалы и собери команду.</p>
+          <h1>Мои игры</h1>
         </div>
         <button className="primary-btn" onClick={() => setCreate(true)}>
           <Plus size={17} />
@@ -61,14 +69,12 @@ export function Games() {
           ).length;
           return (
             <Link className="game-item" key={game.id} to={`/games/${game.id}`}>
-              <div className="game-thumbnail">
-                <PixelScene station />
-              </div>
+              <GameCover source={game.graph?.nodes.find((node) => node.id === "root")?.image} />
               <div className="game-item-content">
                 <div className="tags">
-                  {game.id === "little-station" && <span>Демо-пример</span>}
+                  {game.id === "little-station" && <span>Пример</span>}
                   <span>{game.engine}</span>
-                  <span>{game.genre}</span>
+                  {(game.genres ?? [game.genre]).map((genre) => <span key={genre}>{genre}</span>)}
                 </div>
                 <h2>
                   {game.title}
@@ -86,7 +92,7 @@ export function Games() {
                   <span>
                     {done} / {game.tasks.length} задач готово
                   </span>
-                  <span>Бюджет {money(game.budget)}</span>
+                  <span>{game.payment === "mixed" ? "Комбинированный формат" : game.payment === "revshare" ? "Участие за долю" : "Оплата за задачи"}</span>
                 </div>
               </div>
             </Link>
@@ -98,100 +104,13 @@ export function Games() {
   );
 }
 function NewGame({ onClose }: { onClose: () => void }) {
-  const store = useStore(),
-    navigate = useNavigate();
-  const [error, setError] = useState("");
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const values = new FormData(event.currentTarget);
-    const title = String(values.get("title")).trim(),
-      description = String(values.get("description")).trim();
-    if (!title || !description) {
-      setError("Добавьте название и идею игры.");
-      return;
-    }
-    const game: Game = {
-      id: crypto.randomUUID(),
-      title,
-      description,
-      engine: String(values.get("engine")),
-      genre: String(values.get("genre")),
-      budget: Number(values.get("budget")),
-      tasks: [],
-    };
-    if (store.addGame(game)) {
-      onClose();
-      navigate(`/games/${game.id}`);
-    }
-  }
-  return (
-    <Modal title="Новая игра" onClose={onClose}>
-      <form className="project-form" onSubmit={submit}>
-        <label>
-          Название игры
-          <input
-            name="title"
-            required
-            maxLength={80}
-            placeholder="Как называется твой мир?"
-          />
-        </label>
-        <label>
-          Идея
-          <textarea
-            name="description"
-            required
-            rows={3}
-            maxLength={600}
-            placeholder="Во что будем играть?"
-          />
-        </label>
-        <div className="form-columns">
-          <label>
-            Движок
-            <select name="engine">
-              <option>Godot 4</option>
-              <option>Unity</option>
-              <option>Unreal Engine</option>
-              <option>Web / Three.js</option>
-              <option>Пока выбираю</option>
-            </select>
-          </label>
-          <label>
-            Жанр
-            <select name="genre">
-              {Object.values(genres).map((genre) => (
-                <option key={genre}>{genre}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <label>
-          Общий бюджет, ₽
-          <input
-            name="budget"
-            type="number"
-            required
-            min="0"
-            max="100000000"
-            defaultValue="50000"
-          />
-        </label>
-        {error && (
-          <p role="alert" className="form-error">
-            {error}
-          </p>
-        )}
-        <button type="submit" className="primary-btn">
-          <Gamepad2 size={17} />
-          Создать игру
-        </button>
-        <p className="form-note">Локальный проект. Деньги не списываются.</p>
-      </form>
-    </Modal>
-  );
+  const store = useStore(), navigate = useNavigate();
+  return <GameOnboarding onClose={onClose} onCreate={(game) => {
+    if (store.addGame(game)) { onClose(); navigate(`/games/${game.id}`); }
+  }} />;
 }
 export function GameWorkspace() {
+  const [workspaceParams] = useSearchParams();
   const { id } = useParams(),
     store = useStore(),
     game = store.games.find((game) => game.id === id);
@@ -202,6 +121,7 @@ export function GameWorkspace() {
     [status, setStatus] = useState("all"),
     [preview, setPreview] = useState<string>();
   const [recruit, setRecruit] = useState(false);
+  const [workspaceView, setWorkspaceView] = useState<"plan" | "documents">("plan");
   if (!game)
     return (
       <div className="empty-state">
@@ -211,15 +131,17 @@ export function GameWorkspace() {
         </Link>
       </div>
     );
-  const total = game.tasks.reduce((sum, task) => sum + task.budget, 0),
-    accepted = game.tasks.filter((task) => task.status === "done"),
-    doneBudget = accepted.reduce((sum, task) => sum + task.budget, 0),
-    work = store.workList.find((work) => work.id === preview);
+  const work = store.workList.find((work) => work.id === preview);
   const tasks = game.tasks.filter(
     (task) =>
       (status === "all" || status === task.status) &&
       `${task.title} ${task.brief}`.toLowerCase().includes(query.toLowerCase()),
   );
+  if (workspaceParams.get("board") === "1") return <div className="game-board-window">
+    <header><Link to={`/games/${game.id}`} className="back-link"><ArrowLeft size={18} />К игре</Link><h1>{game.title}</h1></header>
+    <GamePlan key={game.id} game={game} standalone saveGraph={(graph) => store.saveGameGraph(game.id, graph)} onPreview={setPreview} />
+    {work && <Modal title={work.title} wide onClose={() => setPreview(undefined)}><div className="task-preview"><Viewer kind={work.viewer} assetId={work.assetId} /></div></Modal>}
+  </div>;
   return (
     <>
       <Link className="back-link" to="/games">
@@ -230,89 +152,52 @@ export function GameWorkspace() {
         <div>
           <div className="tags">
             <span>{game.engine}</span>
-            <span>{game.genre}</span>
-            <span>ПРЕПРОДАКШН</span>
+            {(game.genres ?? [game.genre]).map((genre) => <span key={genre}>{genre}</span>)}
+            <span>{game.payment === "mixed" ? "КОМБИНИРОВАННЫЙ ФОРМАТ" : game.payment === "revshare" ? "ДОЛЯ ОТ ВЫРУЧКИ" : "ОПЛАТА ЗА ЗАДАЧИ"}</span>
           </div>
           <h1>{game.title}</h1>
           <p>{game.description}</p>
+          {!!game.team?.length && <section className="game-team" aria-label="Команда проекта">
+            <div className="game-team-heading"><strong>Команда</strong><span>{game.team.filter((slot) => slot.assignee).length} из {game.team.length} ролей занято</span></div>
+            <div className="game-team-slots">{game.team.map((slot) => {
+              const member = store.creatorList.find((creator) => creator.id === slot.assignee);
+              return <label key={slot.id} className={member ? "is-filled" : "is-open"}>
+                <span className="game-team-role"><i />{slot.role}</span>
+                <UiSelect ariaLabel={`Исполнитель: ${slot.role}`} value={slot.assignee} options={[{ value: "", label: "В поиске" }, ...store.creatorList.map((creator) => ({ value: creator.id, label: creator.name }))]} onChange={(value) => store.saveGameTeam(game.id, game.team!.map((item) => item.id === slot.id ? { ...item, assignee: value } : item))} />
+              </label>;
+            })}</div>
+          </section>}
         </div>
-        <button className="primary-btn" onClick={() => setEditing(null)}>
-          <Plus size={17} />
-          Добавить задачу
-        </button>
       </div>
-      <nav className="game-next-steps" aria-label="Следующие шаги игры">
-        <button onClick={() => setEditing(null)}>
-          <Plus size={19} />
-          <span>
-            <strong>1. Запланировать работу</strong>
-            <small>Задачи, требования и бюджет</small>
-          </span>
-        </button>
-        <Link to="/market">
-          <Search size={19} />
-          <span>
-            <strong>2. Найти материалы</strong>
-            <small>Готовые ассеты и услуги</small>
-          </span>
-        </Link>
+      <nav className="game-workspace-tabs" role="tablist" aria-label="Раздел игры">
+        <button role="tab" aria-selected={workspaceView === "plan"} onClick={() => setWorkspaceView("plan")}>План игры</button>
+        <button role="tab" aria-selected={workspaceView === "documents"} onClick={() => setWorkspaceView("documents")}>Описание игры</button>
+      </nav>
+      {workspaceView === "documents" ? <Suspense fallback={<div className="game-documents-loading">Открываем документ…</div>}>
+        <GameDocuments game={game} save={(documents) => store.saveGameDocuments(game.id, documents)} saveGraph={(graph) => store.saveGameGraph(game.id, graph)} saveEntities={(entities) => store.saveGameStoryEntities(game.id, entities)} />
+      </Suspense> : <>
+      <GamePlan
+        key={game.id}
+        game={game}
+        saveGraph={(graph) => store.saveGameGraph(game.id, graph)}
+        onPreview={(workId) => setPreview(workId)}
+      />
+      <div className="game-primary-action">
         {store.projectList.find((p) => p.gameId === game.id) ? (
-          <Link
-            to={`/projects/${store.projectList.find((p) => p.gameId === game.id)!.id}`}
-          >
-            <Users size={19} />
-            <span>
-              <strong>3. Набор в команду</strong>
-              <small>Открыть своё объявление</small>
-            </span>
+          <Link className="secondary-btn" to={`/projects/${store.projectList.find((p) => p.gameId === game.id)!.id}`}>
+            <Users size={16} /> Открыть набор
           </Link>
         ) : (
-          <button onClick={() => setRecruit(true)}>
-            <Users size={19} />
-            <span>
-              <strong>3. Собрать команду</strong>
-              <small>Роли и условия участия</small>
-            </span>
+          <button className="secondary-btn" onClick={() => setRecruit(true)}>
+            <Users size={16} /> Собрать команду
           </button>
         )}
-      </nav>
-      <div className="game-metrics">
-        <div>
-          <Wallet size={18} />
-          <span>Бюджет игры</span>
-          <strong>{money(game.budget)}</strong>
-        </div>
-        <div>
-          <ClipboardList size={18} />
-          <span>Запланировано</span>
-          <strong className={total > game.budget ? "over-budget" : ""}>
-            {money(total)}
-          </strong>
-        </div>
-        <div>
-          <Check size={18} />
-          <span>Принято работ</span>
-          <strong>
-            {accepted.length}
-            <small> / {game.tasks.length}</small>
-          </strong>
-        </div>
-        <div>
-          <span>Свободный бюджет</span>
-          <strong className={total > game.budget ? "over-budget" : ""}>
-            {money(game.budget - total)}
-          </strong>
-        </div>
       </div>
-      {total > game.budget && (
-        <p className="budget-warning" role="status">
-          План превышает бюджет на {money(total - game.budget)}.
-        </p>
-      )}
       <div className="workspace-toolbar">
         <h2>
           Задачи игры<span>{game.tasks.length}</span>
         </h2>
+        <button className="secondary-btn" onClick={() => setEditing(null)}><Plus size={16} />Добавить задачу</button>
         <label className="search-field">
           <Search size={16} />
           <input
@@ -322,18 +207,7 @@ export function GameWorkspace() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
-        <select
-          aria-label="Статус задач"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="all">Все статусы</option>
-          {Object.entries(taskStatus).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <UiSelect ariaLabel="Статус задач" value={status} options={[{ value: "all", label: "Все статусы" }, ...Object.entries(taskStatus).map(([value, label]) => ({ value, label }))]} onChange={setStatus} />
       </div>
       <div className="task-table-scroll">
         <table className="task-table">
@@ -343,7 +217,7 @@ export function GameWorkspace() {
               <th>Направление</th>
               <th>Статус</th>
               <th>Креатор</th>
-              <th>Бюджет</th>
+              <th>Стоимость</th>
               <th>Материал</th>
               <th>
                 <span className="sr-only">Изменить</span>
@@ -352,7 +226,7 @@ export function GameWorkspace() {
           </thead>
           <tbody>
             {tasks.map((task) => {
-              const creator = creators.find(
+              const creator = store.creatorList.find(
                 (creator) => creator.id === task.assignee,
               );
               return (
@@ -365,8 +239,9 @@ export function GameWorkspace() {
                       {task.title}
                     </button>
                     <span className="task-subtitle">
-                      {task.animations.length
-                        ? task.animations.join(" · ")
+                      {task.storyNodeId ? game.graph?.nodes.find((node) => node.id === task.storyNodeId)?.title : undefined}
+                      {task.storyNodeId ? ", " : ""}{task.animations.length
+                        ? task.animations.join(", ")
                         : task.deadline
                           ? new Date(
                               task.deadline + "T12:00:00",
@@ -375,7 +250,7 @@ export function GameWorkspace() {
                     </span>
                   </td>
                   <td>
-                    <span className="task-category">{t(task.category)}</span>
+                    <span className="task-category">{task.direction || t(task.category)}</span>
                   </td>
                   <td>
                     <span className={`task-status status-${task.status}`}>
@@ -393,7 +268,7 @@ export function GameWorkspace() {
                           className="avatar"
                           style={{ background: creator.color }}
                         >
-                          {creator.initials}
+                          {creator.avatar ? <img src={creator.avatar} alt="" /> : <UserRound size={16} strokeWidth={1.5} />}
                         </span>
                         {creator.name}
                       </Link>
@@ -401,7 +276,7 @@ export function GameWorkspace() {
                       <span className="muted">Не назначен</span>
                     )}
                   </td>
-                  <td className="task-money">{money(task.budget)}</td>
+                  <td className="task-money">{(task.payment ?? (game.payment === "revshare" ? "revshare" : "fixed")) === "revshare" ? "Доля" : money(task.budget)}</td>
                   <td>
                     {task.workId ? (
                       <button
@@ -444,31 +319,19 @@ export function GameWorkspace() {
                 ? "Задачи не найдены"
                 : "С чего начинается твоя игра?"}
             </h2>
-            <button className="secondary-btn" onClick={() => setEditing(null)}>
-              <Plus size={16} />
-              Добавить задачу
-            </button>
           </div>
         )}
       </div>
-      <div className="workspace-bottom">
-        <span>
-          Принято на {money(doneBudget)} · статусы и бюджет демонстрационные
-        </span>
-        <Link to="/market" className="text-action">
-          Найти ассеты и креаторов
-          <ArrowUpRight size={15} />
-        </Link>
-      </div>
+      </>}
       {recruit && (
         <CreateProject game={game} onClose={() => setRecruit(false)} />
       )}
       {editing !== undefined && (
-        <TaskEditor
-          game={game}
-          initial={editing}
-          onClose={() => setEditing(undefined)}
-        />
+      <TaskEditor
+        game={game}
+        initial={editing}
+        onClose={() => setEditing(undefined)}
+      />
       )}{" "}
       {work && (
         <Modal title={work.title} wide onClose={() => setPreview(undefined)}>
@@ -495,10 +358,13 @@ function TaskEditor({
         id: crypto.randomUUID(),
         title: "",
         category: "animation",
+        direction: "",
         brief: "",
-        budget: 5000,
+        budget: game.payment === "revshare" ? 0 : 5000,
+        payment: game.payment === "revshare" ? "revshare" : "fixed",
         status: "draft",
         assignee: "",
+        storyNodeId: "",
         animations: ["idle", "walk", "run"],
         deadline: "",
       },
@@ -509,13 +375,14 @@ function TaskEditor({
       (initial?.animations ?? ["idle", "walk", "run"]).join(", "),
     );
   const update = (patch: Partial<GameTask>) => setTask({ ...task, ...patch });
+  const taskPayment = task.payment ?? (game.payment === "revshare" ? "revshare" : "fixed");
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!task.title.trim() || !task.brief.trim()) {
       setError("Добавьте название и требования.");
       return;
     }
-    if (task.status !== "draft" && task.budget <= 0) {
+    if (taskPayment === "fixed" && task.status !== "draft" && task.budget <= 0) {
       setError("Для заказа нужен положительный бюджет.");
       return;
     }
@@ -532,6 +399,8 @@ function TaskEditor({
     }
     const result = {
       ...task,
+      payment: taskPayment,
+      budget: taskPayment === "revshare" ? 0 : task.budget,
       title: task.title.trim(),
       brief: task.brief.trim(),
       animations:
@@ -547,7 +416,7 @@ function TaskEditor({
           : [],
     };
     if (store.saveTask(game.id, result)) {
-      store.setToast("Задача сохранена локально");
+      store.setToast("Задание сохранено в браузере");
       onClose();
     }
   }
@@ -566,24 +435,15 @@ function TaskEditor({
         </label>
         <label>
           Направление
-          <select
-            value={task.category}
-            onChange={(e) =>
-              update({
-                category: e.target.value as Category,
-                workId: undefined,
-              })
-            }
-          >
-            {taskCategories.map((category) => (
-              <option key={category} value={category}>
-                {t(category)}
-              </option>
-            ))}
-          </select>
+          <input maxLength={80} value={task.direction || t(task.category)} onChange={(e) => {
+            const value = e.target.value;
+            const match = taskCategories.find((category) => t(category).toLowerCase() === value.trim().toLowerCase());
+            const alias = value.trim().toLowerCase() === "музыка" ? "audio" : value.trim().toLowerCase() === "программирование" ? "game" : value.trim().toLowerCase() === "концепт-арт" ? "art" : undefined;
+            update({ direction: value, category: (match ?? alias ?? "all") as Category, workId: match || alias ? undefined : task.workId });
+          }} />
         </label>
-        <label>
-          Требования
+          <label>
+            Требования
           <textarea
             required
             rows={3}
@@ -592,6 +452,10 @@ function TaskEditor({
             onChange={(e) => update({ brief: e.target.value })}
             placeholder="Стиль, форматы, размеры и критерии готовности"
           />
+        </label>
+        <label>
+          Этап сюжета
+          <UiSelect ariaLabel="Этап сюжета" value={task.storyNodeId ?? ""} options={[{ value: "", label: "Не привязано" }, ...(game.graph?.nodes ?? []).filter((node) => node.type === "scene" || node.type === "story").map((node) => ({ value: node.id, label: node.title }))]} onChange={(value) => update({ storyNodeId: value || undefined })} />
         </label>
         {task.category === "animation" && (
           <label>
@@ -605,8 +469,9 @@ function TaskEditor({
           </label>
         )}
         <div className="form-columns">
-          <label>
-            Бюджет, ₽
+          {game.payment === "mixed" && <label>Оплата этой задачи<UiSelect ariaLabel="Оплата этой задачи" value={taskPayment} options={[{ value: "fixed", label: "Фиксированная оплата" }, { value: "revshare", label: "Доля от выручки" }]} onChange={(value) => update({ payment: value as "fixed" | "revshare" })} /></label>}
+          {taskPayment === "fixed" && <label>
+            Стоимость задачи, ₽
             <input
               required
               type="number"
@@ -615,7 +480,7 @@ function TaskEditor({
               value={task.budget}
               onChange={(e) => update({ budget: Number(e.target.value) })}
             />
-          </label>
+          </label>}
           <label>
             Срок
             <input
@@ -625,53 +490,18 @@ function TaskEditor({
             />
           </label>
         </div>
+        {taskPayment === "revshare" && <label>Условия доли<textarea value={task.shareTerms ?? ""} maxLength={500} onChange={(event) => update({ shareTerms: event.target.value })} placeholder="Размер доли и порядок выплат" /></label>}
         <label>
           Статус
-          <select
-            aria-label="Статус"
-            value={task.status}
-            onChange={(e) =>
-              update({ status: e.target.value as GameTask["status"] })
-            }
-          >
-            {Object.entries(taskStatus).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <UiSelect ariaLabel="Статус" value={task.status} options={Object.entries(taskStatus).map(([value, label]) => ({ value, label }))} onChange={(value) => update({ status: value as GameTask["status"] })} />
         </label>
         <label>
           Исполнитель
-          <select
-            aria-label="Исполнитель"
-            value={task.assignee}
-            onChange={(e) => update({ assignee: e.target.value })}
-          >
-            <option value="">Пока не выбран</option>
-            {creators.map((creator) => (
-              <option key={creator.id} value={creator.id}>
-                {creator.name}
-              </option>
-            ))}
-          </select>
+          <UiSelect ariaLabel="Исполнитель" value={task.assignee} options={[{ value: "", label: "Пока не выбран" }, ...store.creatorList.map((creator) => ({ value: creator.id, label: creator.name }))]} onChange={(value) => update({ assignee: value })} />
         </label>
         <label>
           Прикреплённая работа
-          <select
-            aria-label="Прикреплённая работа"
-            value={task.workId ?? ""}
-            onChange={(e) => update({ workId: e.target.value || undefined })}
-          >
-            <option value="">Без материала</option>
-            {store.workList
-              .filter((work) => work.category === task.category)
-              .map((work) => (
-                <option key={work.id} value={work.id}>
-                  {work.title}
-                </option>
-              ))}
-          </select>
+          <UiSelect ariaLabel="Прикреплённая работа" value={task.workId ?? ""} options={[{ value: "", label: "Без материала" }, ...store.workList.filter((work) => work.category === task.category).map((work) => ({ value: work.id, label: work.title }))]} onChange={(value) => update({ workId: value || undefined })} />
         </label>
         {error && (
           <p className="form-error" role="alert">
@@ -701,8 +531,7 @@ function TaskEditor({
           </button>
         </div>
         <p className="form-note">
-          Локальный план. Назначение креатора и смена статуса не отправляют
-          заказ и не списывают деньги.
+          План сохраняется в браузере. Оплата не подключена.
         </p>
       </form>
     </Modal>

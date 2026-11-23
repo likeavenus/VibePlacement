@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -14,13 +14,14 @@ import {
   Plus,
   Send,
   Trash2,
+  Image as ImageIcon,
   Users,
 } from "lucide-react";
 import { useStore } from "../../app/store";
 import { Avatar } from "../../components/Cards";
-import { PixelScene } from "../../components/viewers/PixelScene";
 import { Modal } from "../../components/Modal";
-import { creatorById, money } from "../../data/mock";
+import { UiSelect } from "../../components/UiSelect";
+import { money } from "../../data/mock";
 import {
   agreementDigest,
   downloadText,
@@ -65,11 +66,14 @@ export function ProjectPage() {
   const { id } = useParams(),
     store = useStore();
   const project = store.projectList.find((p) => p.id === id);
+  const [params] = useSearchParams();
+  const requestedRole = params.get("role") ?? "";
   const [tab, setTab] = useState("overview"),
     [editing, setEditing] = useState(false),
     [responding, setResponding] = useState(false),
     [linksOpen, setLinksOpen] = useState(false),
-    [role, setRole] = useState("");
+    [role, setRole] = useState(requestedRole);
+  useEffect(() => { setRole(requestedRole); setTab("overview"); }, [id, requestedRole]);
   if (!project)
     return (
       <div className="empty-state">
@@ -80,7 +84,7 @@ export function ProjectPage() {
       </div>
     );
   const meta = projectMeta(project),
-    owner = creatorById(project.creatorId),
+    owner = store.creatorById(project.creatorId),
     own = project.creatorId === "denis";
   const versions = [
     initialAgreement(project),
@@ -144,12 +148,10 @@ export function ProjectPage() {
         </div>
         <div>
           <span>
-            {project.payment === "revshare" ? "Пул команды" : "Бюджет набора"}
+            {project.payment === "revshare" ? "Формат участия" : "Формат оплаты"}
           </span>
           <strong>
-            {project.payment === "revshare"
-              ? `до ${project.budget}% RevShare`
-              : money(project.budget)}
+            {project.payment === "mixed" ? "Комбинированный формат" : project.payment === "revshare" ? "Доля от выручки" : "Оплата по задачам"}
           </strong>
         </div>
         <div>
@@ -183,7 +185,7 @@ export function ProjectPage() {
         <div className="project-overview">
           <section>
             <div className="project-scene">
-              <PixelScene station={project.art === "station"} />
+              <span className="project-art-placeholder" aria-hidden="true"><ImageIcon size={42} strokeWidth={1.35} /></span>
             </div>
             <h2>Ближайшая цель</h2>
             <p>{meta.goal}</p>
@@ -195,14 +197,25 @@ export function ProjectPage() {
           </section>
           <section className="project-roles">
             <h2>
-              Открытые роли <span>{project.roles.length}</span>
+              Команда <span>{project.members} из {project.slots}</span>
             </h2>
+            <Link className="project-member-link" to={`/profile/${owner.id}`}><Avatar creator={owner} /><span><strong>{owner.name}</strong><small>Автор проекта</small></span><ArrowUpRight size={17} /></Link>
+            {(project.filledRoles ?? []).map((slot) => {
+              const member = store.creatorList.find((item) => item.id === slot.assignee);
+              return <div key={`${slot.role}-${slot.assignee}`} className="project-filled-role">
+                <span><Users size={18} />{slot.role}</span>
+                {member ? <Link className="project-member-link" to={`/profile/${member.id}`}><Avatar creator={member} /><strong>{member.name}</strong><ArrowUpRight size={16} /></Link> : <strong>{slot.assignee || "Участник"}</strong>}
+              </div>;
+            })}
+            <h3>Открытые позиции <span>{project.roles.length}</span></h3>
+            {!project.roles.length && <p className="form-note">Сейчас команда не набирает участников.</p>}
             {project.roles.map((item) => (
-              <div key={item}>
+              <div key={item} className={`project-open-role${role === item ? " is-selected" : ""}`}>
                 <span>
                   <Users size={18} />
                   {item}
                 </span>
+                <strong>{project.payment === "revshare" ? "Доля обсуждается" : project.roleOffers?.find((offer) => offer.role === item) ? `${money(project.roleOffers.find((offer) => offer.role === item)!.amount)} за работу` : project.payment === "mixed" ? "Условия обсуждаются" : "Оплата обсуждается"}</strong>
                 <button
                   className="text-action"
                   onClick={() => {
@@ -210,12 +223,12 @@ export function ProjectPage() {
                     setTab("terms");
                   }}
                 >
-                  Условия <ArrowUpRight size={16} />
+                  {own ? "Условия" : "Хочу в команду"} <ArrowUpRight size={16} />
                 </button>
               </div>
             ))}
             <p className="form-note">
-              {project.payment === "revshare"
+              {project.payment === "mixed" ? "Формат работы и условия согласуются отдельно для каждой роли." : project.payment === "revshare"
                 ? "Доля каждого участника обсуждается отдельно. Доход и релиз не гарантированы."
                 : "Индивидуальная стоимость и этапы оплаты обсуждаются до начала работы."}
             </p>
@@ -228,7 +241,7 @@ export function ProjectPage() {
             <div>
               <h2>Условия участия</h2>
               <span className="form-note">
-                Версия {current.version} ·{" "}
+                Версия {current.version}, {" "}
                 {current.source === "template"
                   ? "Базовый шаблон"
                   : "Текст автора"}
@@ -268,9 +281,9 @@ export function ProjectPage() {
             </div>
           </div>
           <p className="agreement-notice">
-            Черновик для обсуждения, не проверен юристом. Подписание и
-            подтверждение личности не подключены.
+            Черновик. Не проверен юристом и не подписан сторонами.
           </p>
+          {role && project.roles.includes(role) && <p className="project-selected-role">Роль: <strong>{role}</strong></p>}
           <div className="terms-sections">
             {termsFields.map(([key, label], i) => (
               <section key={key}>
@@ -285,17 +298,16 @@ export function ProjectPage() {
           <div className="response-actions">
             {own ? (
               <span className="form-note">
-                Вы автор проекта. Отклики других людей появятся после
-                подключения сервера.
+                Отклики сохраняются в браузере и не отправляются.
               </span>
             ) : (
               <button
                 className="primary-btn"
-                disabled={latestResponse}
+                disabled={latestResponse || !project.roles.length}
                 onClick={() => setResponding(true)}
               >
                 {latestResponse ? <Check size={18} /> : <Send size={18} />}
-                {latestResponse ? "Отклик сохранён" : "Откликнуться на роль"}
+                {latestResponse ? "Отклик сохранён" : !project.roles.length ? "Набор закрыт" : "Откликнуться на роль"}
               </button>
             )}
             {response && (
@@ -305,7 +317,7 @@ export function ProjectPage() {
                   exportAgreement(project, response.agreement, response)
                 }
               >
-                <Download size={17} /> Мой отклик · v
+                <Download size={17} /> Мой отклик, версия{" "}
                 {response.agreement.version}
               </button>
             )}
@@ -319,7 +331,7 @@ export function ProjectPage() {
           )}
           <details className="agreement-history">
             <summary>
-              <History size={18} /> История версий · {versions.length}
+              <History size={18} /> История версий ({versions.length})
             </summary>
             {versions
               .slice()
@@ -327,7 +339,7 @@ export function ProjectPage() {
               .map((version) => (
                 <div key={version.id}>
                   <span>
-                    Версия {version.version} ·{" "}
+                    Версия {version.version},{" "}
                     {version.id.startsWith("initial:")
                       ? "Исходный шаблон"
                       : new Date(version.createdAt).toLocaleString("ru-RU")}
@@ -446,7 +458,7 @@ function TermsEditor({
         terms: result.data,
       })
     ) {
-      store.setToast("Новая версия условий сохранена локально");
+      store.setToast("Новая версия сохранена в браузере");
       onClose();
     } else
       setError(
@@ -526,7 +538,7 @@ function ResponseForm({
   onClose: () => void;
 }) {
   const store = useStore(),
-    [role, setRole] = useState(selectedRole || project.roles[0]),
+    [role, setRole] = useState(project.roles.includes(selectedRole) ? selectedRole : project.roles[0] ?? ""),
     [message, setMessage] = useState(""),
     [confirmed, setConfirmed] = useState(false),
     [busy, setBusy] = useState(false),
@@ -552,7 +564,7 @@ function ResponseForm({
         );
         return;
       }
-      store.setToast("Отклик и версия условий сохранены локально");
+      store.setToast("Отклик сохранён в браузере");
       onClose();
     } catch {
       setError("Не удалось сохранить отклик.");
@@ -565,15 +577,12 @@ function ResponseForm({
       <form className="project-form" onSubmit={submit}>
         <label>
           Роль
-          <select
-            aria-label="Роль для отклика"
+          <UiSelect
+            ariaLabel="Роль для отклика"
             value={role}
-            onChange={(e) => setRole(e.target.value)}
-          >
-            {project.roles.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
+            onChange={setRole}
+            options={project.roles.map((item) => ({ value: item, label: item }))}
+          />
         </label>
         <label>
           О себе и доступности
@@ -598,8 +607,7 @@ function ResponseForm({
           вместе с откликом.
         </label>
         <p className="form-note">
-          Это локальный отклик, не подписание договора. Автор проекта его пока
-          не получит.
+          Отклик сохранится в браузере. Автор его не получит.
         </p>
         {error && (
           <p role="alert" className="form-error">
@@ -645,8 +653,7 @@ function LinksEditor({
         }}
       >
         <p className="form-note">
-          Только публичные ссылки. Токены, пароли и секретные приглашения не
-          добавляйте.
+          Только публичные ссылки. Не добавляйте пароли и приглашения.
         </p>
         {links.map((link, index) => (
           <fieldset key={link.id}>

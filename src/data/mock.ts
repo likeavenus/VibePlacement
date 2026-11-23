@@ -18,7 +18,7 @@ export const creators: Creator[] = [
     handle: "nova.frames",
     initials: "АН",
     color: "#c7a2ec",
-    role: "AI-художник · Art direction",
+    role: "Художник и арт-директор",
     skills: ["Midjourney", "ComfyUI", "Kling"],
     rating: 5.0,
     completed: 16,
@@ -42,7 +42,7 @@ export const creators: Creator[] = [
     handle: "volna.sound",
     initials: "ЛВ",
     color: "#b7a0d3",
-    role: "Саунд-дизайнер · Актриса озвучки",
+    role: "Саунд-дизайнер, актриса озвучки",
     skills: ["Reaper", "FMOD", "Озвучка"],
     rating: 5.0,
     completed: 42,
@@ -54,7 +54,7 @@ export const creators: Creator[] = [
     handle: "kir.8bit",
     initials: "КП",
     color: "#88c4cc",
-    role: "Pixel artist",
+    role: "Пиксель-художник",
     skills: ["Aseprite", "Godot", "Анимация"],
     rating: 4.8,
     completed: 19,
@@ -89,7 +89,7 @@ export const works: Work[] = [
   },
   {
     id: "spine-scout",
-    title: "Разведчик / набор анимаций",
+    title: "Разведчик: набор анимаций",
     category: "animation",
     viewer: "spine",
     creatorId: "kir",
@@ -99,11 +99,11 @@ export const works: Work[] = [
     color: "mint",
     saleType: "service",
     description:
-      "Риг и набор анимаций для вашего персонажа: ожидание, ходьба, бег, прыжок и атака. Вьюер показывает официальный демонстрационный Spineboy от Esoteric Software. Демоматериалы не продаются; стоимость указана за создание собственного персонажа.",
+      "Риг и анимации игрового персонажа: ожидание, ходьба, бег, прыжок и атака.",
   },
   {
     id: "panel",
-    title: "Панельки с душой. Game-ready",
+    title: "Панельный дом с четырьмя фасадами",
     category: "3d",
     viewer: "model",
     creatorId: "misha",
@@ -112,20 +112,20 @@ export const works: Work[] = [
     label: "3D / ОКРУЖЕНИЕ",
     color: "mint",
     description:
-      "Модульный дом, 4 варианта фасада, PBR-текстуры 2K. Форматы FBX, GLB и исходник Blender. Срок: 5–7 дней, две итерации правок.",
+      "Модульный дом, четыре фасада и PBR-текстуры 2K. FBX, GLB и файл Blender. Срок 5–7 дней, две правки.",
   },
   {
     id: "world",
-    title: "Миры, которых ещё не было",
+    title: "Концепты окружения для игры",
     category: "art",
     viewer: "image",
     creatorId: "anna",
     price: 4000,
-    tags: ["AI art", "Концепт"],
-    label: "AI / ВИЗУАЛ",
+    tags: ["ИИ-арт", "Концепты"],
+    label: "ИИ / ВИЗУАЛ",
     color: "orange",
     description:
-      "Пакет из 6 концептов окружения под настроение вашей игры. Цветовой поиск и финальные кадры в 4K. Фото в демо используется как образец работы просмотрщика.",
+      "Шесть концептов окружения для игры, цветовой поиск и финальные кадры в 4K.",
   },
   {
     id: "game-ui",
@@ -142,7 +142,7 @@ export const works: Work[] = [
   },
   {
     id: "sound",
-    title: "Звук для маленьких вселенных",
+    title: "Звуки интерфейса и атмосферы",
     category: "audio",
     viewer: "audio",
     creatorId: "lera",
@@ -151,12 +151,12 @@ export const works: Work[] = [
     label: "ЗВУК / САУНД-ДИЗАЙН",
     color: "purple",
     description:
-      "Набор из 12 звуков интерфейса и атмосферная петля. WAV 48 kHz, два раунда правок. В плеере звучит синтезированный демотрек.",
+      "Двенадцать звуков интерфейса и атмосферная петля. WAV 48 kHz, два раунда правок.",
   },
   {
     id: "pixel",
     saleType: "asset",
-    title: "Твой следующий пиксельный мир",
+    title: "Пиксельный тайлсет 16 × 16",
     category: "art",
     viewer: "pixel",
     creatorId: "kir",
@@ -169,7 +169,7 @@ export const works: Work[] = [
   },
   {
     id: "story",
-    title: "Персонажи, которым веришь",
+    title: "Ветвящийся диалог для игры",
     category: "writing",
     viewer: "script",
     creatorId: "sasha",
@@ -182,7 +182,7 @@ export const works: Work[] = [
   },
   {
     id: "film",
-    title: "Маленькая жизнь. Mood film",
+    title: "Атмосферный ролик для игры",
     category: "video",
     viewer: "video",
     creatorId: "anna",
@@ -191,7 +191,7 @@ export const works: Work[] = [
     label: "ВИДЕО / АТМОСФЕРА",
     color: "purple",
     description:
-      "Визуальная концепция и короткий атмосферный ролик. В демо проигрывается открытый пример flower.mp4 от MDN, а не результат ИИ-генерации.",
+      "Короткий ролик помогает выбрать цвет, свет и темп будущей игры.",
   },
 ];
 export const seedProjects: Project[] = [
@@ -268,7 +268,7 @@ export const seedProjects: Project[] = [
       "Уютное приключение на последней станции. Делаем маленькую игру о больших переменах.",
     category: "art",
     tags: ["Godot", "Cozy game", "PC"],
-    roles: ["Pixel artist", "Саунд-дизайнер", "Нарративный дизайнер"],
+    roles: ["Пиксель-художник", "Саунд-дизайнер", "Нарративный дизайнер"],
     payment: "revshare",
     budget: 15,
     members: 2,

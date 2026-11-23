@@ -10,6 +10,7 @@ import "./refinements.css";
 import "./projects.css";
 import "./light-theme.css";
 import "./journeys.css";
+import "./features/marketplace/matching.css";
 const Router = import.meta.env.MODE === "github" ? HashRouter : BrowserRouter;
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

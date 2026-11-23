@@ -44,7 +44,7 @@ export async function validateSpineFiles(files: File[]) {
       const tooLarge = bitmap.width > 4096 || bitmap.height > 4096;
       bitmap.close();
       if (tooLarge)
-        throw new Error("Размер страницы атласа — не более 4096 × 4096.");
+        throw new Error("Размер страницы атласа: максимум 4096 × 4096.");
     }
     const animations = Object.keys(json.animations);
     if (!animations.length) throw new Error("В файле нет анимаций.");
@@ -106,7 +106,7 @@ export async function loadSpineAsset(assetId?: string, draft?: AssetBundle) {
           !Number.isFinite(animation.duration) || animation.duration > 120,
       )
     )
-      throw new Error("Длительность одной анимации — не более 120 секунд.");
+      throw new Error("Длительность анимации: максимум 120 секунд.");
     return { skeletonData, dispose };
   } catch (error) {
     dispose();

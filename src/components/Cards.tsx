@@ -5,14 +5,15 @@ import {
   Bookmark,
   Check,
   CheckCircle2,
+  Image as ImageIcon,
   Star,
+  UserRound,
   Users,
 } from "lucide-react";
 import type { Creator, Project, Work } from "../data/types";
-import { creatorById, money } from "../data/mock";
+import { money } from "../data/mock";
 import { useStore } from "../app/store";
 import { Viewer } from "./viewers/Viewer";
-import { PixelScene } from "./viewers/PixelScene";
 import { Modal } from "./Modal";
 import { WorkDetail } from "../features/studio/WorkDetail";
 import { t } from "../i18n";
@@ -30,13 +31,13 @@ export function Avatar({
       style={{ backgroundColor: creator.color }}
       aria-hidden="true"
     >
-      {creator.initials}
+      {creator.avatar ? <img src={creator.avatar} alt="" /> : <UserRound size={large ? 34 : 17} strokeWidth={1.5} />}
     </span>
   );
 }
 export function WorkCard({ work }: { work: Work }) {
-  const creator = creatorById(work.creatorId),
-    store = useStore();
+  const store = useStore(),
+    creator = store.creatorById(work.creatorId);
   const [details, setDetails] = useState(false);
   const saved = store.favorites.includes(work.id),
     requested = store.applications.includes("work:" + work.id);
@@ -106,6 +107,7 @@ export function WorkCard({ work }: { work: Work }) {
   );
 }
 export function ProjectCard({ project }: { project: Project }) {
+  const store = useStore();
   const meta = projectMeta(project);
   return (
     <article className="project-card">
@@ -114,7 +116,7 @@ export function ProjectCard({ project }: { project: Project }) {
         className="project-art"
         aria-label={`О проекте: ${project.title}`}
       >
-        <PixelScene station={project.art === "station"} />
+        <span className="project-art-placeholder" aria-hidden="true"><ImageIcon size={34} strokeWidth={1.4} /></span>
         <span className="project-type">{genres[meta.genre]}</span>
       </Link>
       <div className="card-body">
@@ -132,20 +134,19 @@ export function ProjectCard({ project }: { project: Project }) {
           <span>{meta.engine}</span>
           <span>{meta.platform}</span>
         </div>
-        <div className="roles">
-          {project.roles.map((role) => (
-            <span key={role}>
-              <span className="role-dot" />
-              {role}
-            </span>
-          ))}
+        <div className="project-openings">
+          <strong>{project.roles.length ? "Кого ищем" : "Набор закрыт"}</strong>
+          {project.roles.map((role) => {
+            const offer = project.roleOffers?.find((item) => item.role === role);
+            return <Link key={role} to={`/projects/${project.id}?role=${encodeURIComponent(role)}`}><span>{role}</span>{offer && <small>{money(offer.amount)}</small>}<ArrowUpRight size={16} /></Link>;
+          })}
         </div>
+        {!!project.filledRoles?.length && <div className="project-card-members">{project.filledRoles.map((slot) => {
+          const member = store.creatorList.find((item) => item.id === slot.assignee);
+          return member ? <Link key={`${slot.role}-${slot.assignee}`} to={`/profile/${member.id}`} title={`${slot.role}: ${member.name}`}><Avatar creator={member} /><span>{member.name}</span></Link> : null;
+        })}</div>}
         <div className="card-footer">
-          <strong>
-            {project.payment === "revshare"
-              ? `до ${project.budget}% RevShare`
-              : money(project.budget)}
-          </strong>
+          <strong>{project.payment === "mixed" ? "Комбинированный формат" : project.payment === "revshare" ? "Доля от выручки" : "Оплата по задачам"}</strong>
           <Link className="text-action" to={`/projects/${project.id}`}>
             Об игре <ArrowUpRight size={17} />
           </Link>

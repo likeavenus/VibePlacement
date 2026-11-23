@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "gh-pages": "^6.3.0"
+  },
+  "_npx": {
+    "packages": [
+      "gh-pages"
+    ]
+  }
+}

@@ -12,19 +12,23 @@ import {
   Check,
   FileCheck2,
   ImagePlus,
+  Gamepad2,
   LoaderCircle,
   Upload,
 } from "lucide-react";
 import { Modal } from "../../components/Modal";
+import { UiSelect } from "../../components/UiSelect";
 import { useStore } from "../../app/store";
 import { removeBundle, saveBundle, type AssetBundle } from "../../data/assets";
 import { directions, directionFor } from "../../data/categories";
 import { validateUpload } from "../../data/validateUpload";
+import { youtubeEmbedUrl } from "../../data/gameRelease";
 import { blankStory, storySchema, type Story } from "../../data/story";
 import type { Category } from "../../data/types";
 import { BundleViewer } from "../../components/viewers/BundleViewer";
 import { StoryEditor } from "./StoryEditor";
 import { t } from "../../i18n";
+import "./game-release.css";
 const SpineViewer = lazy(() => import("../../components/viewers/SpineViewer"));
 
 export function PublishWork({ onClose }: { onClose: () => void }) {
@@ -49,7 +53,12 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
     [rights, setRights] = useState(false),
     [writingMode, setWritingMode] = useState<"editor" | "upload">("editor"),
     [story, setStory] = useState<Story>(blankStory),
-    [dragging, setDragging] = useState(false);
+    [dragging, setDragging] = useState(false),
+    [platform, setPlatform] = useState("Windows"),
+    [version, setVersion] = useState("0.1.0"),
+    [videoUrl, setVideoUrl] = useState(""),
+    [coverFile, setCoverFile] = useState<File>(),
+    [coverUrl, setCoverUrl] = useState("");
   const generation = useRef(0),
     direction = directionFor(category),
     fileInput = useRef<HTMLInputElement>(null);
@@ -59,6 +68,15 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
     },
     [],
   );
+  useEffect(() => {
+    if (!coverFile) {
+      setCoverUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(coverFile);
+    setCoverUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [coverFile]);
   const invalidate = () => {
     generation.current++;
     setDraft(undefined);
@@ -66,6 +84,7 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
     setReady(false);
     setBusy(false);
     setError("");
+    setCoverFile(undefined);
     if (fileInput.current) fileInput.current.value = "";
   };
   async function selectFiles(files: File[]) {
@@ -90,6 +109,20 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
         );
     } finally {
       if (version === generation.current) setBusy(false);
+    }
+  }
+  async function selectCover(file?: File) {
+    if (!file) return;
+    setError("");
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Обложка должна быть не больше 5 МБ.");
+      return;
+    }
+    try {
+      await validateUpload("art", [file]);
+      setCoverFile(file);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Не удалось проверить обложку.");
     }
   }
   async function prepareStory() {
@@ -117,10 +150,15 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
       setError("Заполните название, описание и стоимость.");
       return;
     }
+    const videoEmbed = category === "game" ? youtubeEmbedUrl(videoUrl) : undefined;
+    if (category === "game" && (!platform.trim() || !version.trim() || (videoUrl.trim() && !videoEmbed))) {
+      setError("Проверьте платформу, версию и HTTPS-ссылку на YouTube.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
-      await saveBundle(draft);
+      await saveBundle({ ...draft, ...(category === "game" && coverFile ? { cover: coverFile } : {}) });
       const saved = store.publish({
         id: crypto.randomUUID(),
         title: title.trim(),
@@ -145,6 +183,7 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
         assetId: draft.id,
         saleType,
         animations,
+        ...(category === "game" ? { gamePage: { platform: platform.trim(), version: version.trim(), ...(videoEmbed ? { videoUrl: videoUrl.trim() } : {}) } } : {}),
       });
       if (!saved) {
         await removeBundle(draft.id);
@@ -153,7 +192,7 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
         );
         return;
       }
-      store.setToast("Работа опубликована локально");
+      store.setToast("Работа сохранена в браузере");
       onClose();
     } catch (error) {
       setError(
@@ -169,20 +208,17 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
         <div className="publish-fields">
           <label>
             Направление
-            <select
-              aria-label="Направление работы"
+            <UiSelect
+              ariaLabel="Направление работы"
               value={category}
-              onChange={(e) => {
+              onChange={(value) => {
                 invalidate();
-                setCategory(e.target.value as Category);
+                const next = value as Category;
+                setCategory(next);
+                if (next === "game" && saleType === "service") setSaleType("asset");
               }}
-            >
-              {directions.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {t(d.id)}
-                </option>
-              ))}
-            </select>
+              options={directions.map((d) => ({ value: d.id, label: t(d.id) }))}
+            />
           </label>
           <label>
             Название
@@ -209,17 +245,32 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
               placeholder="Состав работы и условия использования"
             />
           </label>
+          {category === "game" && <>
+            <label>
+              Платформа
+              <input aria-label="Платформа игры" required maxLength={80} value={platform} onChange={(event) => setPlatform(event.target.value)} placeholder="Windows, macOS, Linux" />
+            </label>
+            <label>
+              Версия
+              <input aria-label="Версия игры" required maxLength={32} value={version} onChange={(event) => setVersion(event.target.value)} placeholder="0.1.0" />
+            </label>
+            <label>
+              Видео на YouTube
+              <input aria-label="Видео игры на YouTube" type="url" value={videoUrl} onChange={(event) => setVideoUrl(event.target.value)} placeholder="https://youtu.be/..." />
+            </label>
+          </>}
           <label>
             Публикация
-            <select
-              aria-label="Публикация"
+            <UiSelect
+              ariaLabel="Публикация"
               value={saleType}
-              onChange={(e) => setSaleType(e.target.value as typeof saleType)}
-            >
-              <option value="asset">Готовый ассет на продажу</option>
-              <option value="service">Услуга на заказ</option>
-              <option value="showcase">Портфолио / обратная связь</option>
-            </select>
+              onChange={(value) => setSaleType(value as typeof saleType)}
+              options={[
+                { value: "asset", label: category === "game" ? "Игра для скачивания" : "Готовый ассет на продажу" },
+                ...(category !== "game" ? [{ value: "service", label: "Услуга на заказ" }] : []),
+                { value: "showcase", label: category === "game" ? "Страница игры" : "Портфолио / обратная связь" },
+              ]}
+            />
           </label>
           {saleType !== "showcase" && (
             <label>
@@ -245,6 +296,13 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
           </label>
         </div>
         <div className="publish-preview">
+          {category === "game" && <>
+            <label className="game-cover-upload">
+              {coverUrl ? <img src={coverUrl} alt="Обложка игры" /> : <><ImagePlus size={24} /><span>Обложка игры</span></>}
+              <input aria-label="Обложка игры" type="file" accept=".png,.jpg,.jpeg,.webp" onChange={(event) => void selectCover(event.target.files?.[0])} />
+            </label>
+            <p className="game-upload-notice"><Gamepad2 size={16} />Сборка хранится только в этом браузере. Сайт не запускает и не проверяет файлы на вирусы.</p>
+          </>}
           {category === "writing" && (
             <div className="segmented" aria-label="Способ создания сценария">
               <button
@@ -294,7 +352,7 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
                 key={category}
                 aria-label="Файлы работы"
                 type="file"
-                multiple={["animation", "art", "ux"].includes(category)}
+                multiple={["animation", "art", "ux", "game"].includes(category)}
                 accept={direction.accept}
                 onChange={(e) => {
                   if (e.target.files?.length)
@@ -324,8 +382,7 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
           )}
           {busy && (
             <div className="upload-validation" role="status">
-              <LoaderCircle className="spin" size={20} /> Проверяем содержимое
-              файлов…
+              <LoaderCircle className="spin" size={20} /> Проверяем файлы
             </div>
           )}
           {draft && (
@@ -378,7 +435,7 @@ export function PublishWork({ onClose }: { onClose: () => void }) {
         </div>
         <div className="publish-footer">
           <p className="form-note">
-            Локальная публикация. Оплата и отправка на сервер ещё не подключены.
+            Сохранится в браузере. Оплата не подключена.
           </p>
           <button
             type="submit"

@@ -1,61 +1,21 @@
 import { useState } from "react";
-import { Expand, Minus, Plus, RotateCcw, Columns2 } from "lucide-react";
+import { Expand, Minus, Plus, RotateCcw, Image as ImageIcon } from "lucide-react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { Modal } from "../Modal";
-import { publicAsset } from "../../data/urls";
-const demoImage = publicAsset("assets/alpine.jpg");
 export default function ImageViewer({
-  source = demoImage,
+  source,
 }: {
   source?: string;
 }) {
-  const [expanded, setExpanded] = useState(false),
-    [compare, setCompare] = useState(false),
-    [split, setSplit] = useState(50);
+  const [expanded, setExpanded] = useState(false);
+  if (!source) return <div className="viewer-fallback viewer-placeholder"><ImageIcon size={34} strokeWidth={1.35} /><span>Изображение появится после загрузки</span></div>;
   return (
     <div className="image-viewer">
       <img
         src={source}
-        alt={source === demoImage ? "Горный пейзаж" : "Изображение автора"}
-        className={source === demoImage ? "graded-image" : ""}
+        alt="Изображение автора"
       />
-      {compare && (
-        <>
-          <img
-            src={source}
-            alt="Исходный кадр"
-            className="before-image"
-            style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}
-          />
-          <div className="compare-line" style={{ left: split + "%" }} />
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={split}
-            onChange={(e) => setSplit(Number(e.target.value))}
-            className="compare-range"
-            aria-label="Сравнение до и после"
-          />
-          <span className="compare-before">ДО</span>
-          <span className="compare-after">ПОСЛЕ</span>
-        </>
-      )}
-      {source === demoImage && (
-        <span className="viewer-badge">VISUAL EXPLORATION / 04</span>
-      )}
       <div className="viewer-actions">
-        {source === demoImage && (
-          <button
-            type="button"
-            className={`icon-btn ${compare ? "selected" : ""}`}
-            title="До / после"
-            aria-label="Сравнить до и после"
-            onClick={() => setCompare(!compare)}
-          >
-            <Columns2 size={15} />
-          </button>
-        )}
         <button
           type="button"
           className="icon-btn"
@@ -68,9 +28,7 @@ export default function ImageViewer({
       </div>
       {expanded && (
         <Modal
-          title={
-            source === demoImage ? "Миры, которых ещё не было" : "Работа автора"
-          }
+          title="Работа автора"
           wide
           onClose={() => setExpanded(false)}
         >
@@ -108,7 +66,7 @@ export default function ImageViewer({
                   contentStyle={{ width: "100%" }}
                 >
                   <img
-                    className={`expanded-image ${source === demoImage ? "graded-image" : ""}`}
+                    className="expanded-image"
                     src={source}
                     alt="Изображение в полном размере"
                   />
@@ -116,27 +74,6 @@ export default function ImageViewer({
               </>
             )}
           </TransformWrapper>
-          {source === demoImage && (
-            <p className="asset-credit">
-              Fronalpstock · Hannes Röst ·{" "}
-              <a
-                href="https://commons.wikimedia.org/wiki/File:Fronalpstock_big.jpg"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Wikimedia Commons
-              </a>{" "}
-              ·{" "}
-              <a
-                href="https://creativecommons.org/licenses/by-sa/3.0/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                CC BY-SA 3.0
-              </a>
-              . Размер и цвет изменены.
-            </p>
-          )}
         </Modal>
       )}
     </div>

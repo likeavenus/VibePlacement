@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowUpRight,
   MessageCircle,
@@ -13,8 +13,14 @@ import { PublishWork } from "./PublishWork";
 import { money } from "../../data/mock";
 export function Studio() {
   const store = useStore();
-  const [publish, setPublish] = useState(false),
-    [tab, setTab] = useState("works");
+  const [params, setParams] = useSearchParams();
+  const publish = params.get("publish") === "1";
+  const setPublish = (open: boolean) => {
+    const next = new URLSearchParams(params);
+    if (open) next.set("publish", "1"); else next.delete("publish");
+    setParams(next, { replace: true });
+  };
+  const [tab, setTab] = useState("works");
   const works = store.workList.filter((work) => work.creatorId === "denis"),
     sales = store.purchases.filter((purchase) => purchase.sellerId === "denis"),
     comments = store.comments.filter((comment) =>
@@ -26,11 +32,7 @@ export function Studio() {
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">СОЗДАВАЙ ТО, ЧТО НУЖНО ИГРАМ</div>
-          <h1>
-            Мои публикации<span className="heading-dot">.</span>
-          </h1>
-          <p>Портфолио, услуги и ассеты на продажу.</p>
+          <h1>Мои публикации</h1>
         </div>
         <button className="primary-btn" onClick={() => setPublish(true)}>
           <Plus size={17} />
@@ -50,11 +52,11 @@ export function Studio() {
         </div>
         <div>
           <Wallet size={18} />
-          <span>Продажи · демо</span>
+          <span>Продажи</span>
           <strong>{money(gross)}</strong>
         </div>
         <div>
-          <span>Доход после комиссии · демо</span>
+          <span>Доход после комиссии</span>
           <strong>{money(gross - fee)}</strong>
         </div>
       </div>
@@ -86,10 +88,7 @@ export function Studio() {
         <>
           <div className="sales-summary">
             <h2>Продажи и начисления</h2>
-            <p className="form-note">
-              Тестовая комиссия — 10%. Реальные платежи и вывод средств не
-              подключены.
-            </p>
+            <p className="form-note">Платежи не подключены.</p>
           </div>
           {sales.length ? (
             <div className="task-table-scroll">
@@ -152,11 +151,7 @@ export function Library() {
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">ВСЁ ДЛЯ ТВОИХ МИРОВ</div>
-          <h1>
-            Библиотека<span className="heading-dot">.</span>
-          </h1>
-          <p>Приобретённые работы для твоих игр.</p>
+          <h1>Покупки</h1>
         </div>
         <Link className="secondary-btn" to="/market">
           К работам
@@ -172,7 +167,7 @@ export function Library() {
       ) : (
         <div className="empty-state">
           <ShoppingBag size={35} />
-          <h2>Здесь появятся твои ассеты</h2>
+          <h2>Здесь появятся покупки</h2>
           <Link className="primary-btn" to="/market?category=art">
             Найти первую работу
             <ArrowUpRight size={16} />

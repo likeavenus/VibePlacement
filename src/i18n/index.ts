@@ -1,5 +1,5 @@
 export const ru = {
-  brand: "VibePlacement",
+  brand: "Игроцех",
   marketplace: "Маркетплейс",
   projects: "Проекты",
   creators: "Креаторы",
@@ -18,6 +18,7 @@ export const ru = {
   art: "2D и пиксель-арт",
   writing: "Сценарии",
   animation: "2D / Spine-анимация",
+  game: "Игра / сборка",
   soon: "Скоро",
   empty: "Пока ничего не нашлось",
   clear: "Сбросить фильтры",

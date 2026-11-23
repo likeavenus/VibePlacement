@@ -1,4 +1,4 @@
-import { checkFileSize, type AssetBundle } from "./assets";
+import { checkFileSize, checkGameFileSize, type AssetBundle } from "./assets";
 import { directionFor } from "./categories";
 import type { Category } from "./types";
 import { readStory, type Story } from "./story";
@@ -93,6 +93,50 @@ export async function validateUpload(
   category: Category,
   files: File[],
 ): Promise<{ kind: AssetBundle["kind"]; animations: string[]; story?: Story }> {
+  if (category === "game") {
+    checkGameFileSize(files);
+    const allowed = new Set([
+      "zip", "exe", "msi", "dll", "pck", "pak", "dat", "bin", "cfg", "ini", "json", "txt",
+      "png", "jpg", "jpeg", "webp", "ogg", "wav", "mp3",
+    ]);
+    let hasLaunchFile = false;
+    for (const file of files) {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+      if (
+        !file.size ||
+        !allowed.has(ext) ||
+        /[\\/:*?"<>|\u0000-\u001f]/.test(file.name) ||
+        file.name === "." ||
+        file.name === ".." ||
+        /[. ]$/.test(file.name)
+      )
+        throw new Error(`Файл ${file.name} не подходит для сборки. Разрешены архивы, исполняемые файлы и данные игры.`);
+      if (ext === "zip") {
+        const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+        const validZip = head[0] === 0x50 && head[1] === 0x4b && (
+          (head[2] === 0x03 && head[3] === 0x04) ||
+          (head[2] === 0x05 && head[3] === 0x06) ||
+          (head[2] === 0x07 && head[3] === 0x08)
+        );
+        if (!validZip)
+          throw new Error(`Архив ${file.name} не прошёл проверку заголовка ZIP.`);
+        hasLaunchFile = true;
+      } else if (ext === "exe" || ext === "dll") {
+        const bytes = new Uint8Array(await file.slice(0, 1024 * 1024).arrayBuffer());
+        const offset = bytes.length >= 64 ? new DataView(bytes.buffer).getUint32(0x3c, true) : bytes.length;
+        if (bytes[0] !== 0x4d || bytes[1] !== 0x5a || offset + 4 > bytes.length || ascii(bytes, offset, 4) !== "PE\0\0")
+          throw new Error(`Файл ${file.name} не прошёл проверку формата Windows-приложения.`);
+        if (ext === "exe") hasLaunchFile = true;
+      } else if (ext === "msi") {
+        const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+        if (![0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1].every((byte, index) => head[index] === byte))
+          throw new Error(`Файл ${file.name} не прошёл проверку формата MSI.`);
+        hasLaunchFile = true;
+      }
+    }
+    if (!hasLaunchFile) throw new Error("Добавьте ZIP-архив, EXE или MSI с игрой.");
+    return { kind: "game", animations: [] };
+  }
   checkFileSize(files);
   const direction = directionFor(category),
     allowed = direction.accept.split(",");

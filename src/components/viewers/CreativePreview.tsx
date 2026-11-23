@@ -47,7 +47,7 @@ export function DesignPreview() {
         <div className="design-map">
           <Map size={42} />
           <strong>Северный остров</strong>
-          <span>Станция · открыта</span>
+          <span>Станция, открыта</span>
         </div>
       )}
     </div>

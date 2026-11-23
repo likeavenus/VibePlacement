@@ -150,7 +150,7 @@ try {
     });
   });
   await page.reload();
-  await page.getByRole("heading", { name: "Ассеты и услуги." }).waitFor();
+  await page.getByRole("heading", { name: "Ассеты и услуги" }).waitFor();
   await page.locator(".sidebar-directions summary").click();
   check(
     "New directions in navigation",
@@ -176,17 +176,31 @@ try {
   await page.getByRole("link", { name: "Креаторы", exact: true }).click();
   await page.getByRole("progressbar", { name: "Загрузка страницы" }).waitFor();
   check("Progress visible while route loads");
-  await page.getByRole("heading", { name: "Креаторы." }).waitFor();
+  await page.getByRole("heading", { name: "Креаторы" }).waitFor();
   await page.getByRole("progressbar").waitFor({ state: "detached" });
   check("Progress completes after route ready");
   await page.unroute("**/src/features/profile/Profile.tsx*");
   await page.goBack();
-  await page.getByRole("heading", { name: "Ассеты и услуги." }).waitFor();
+  await page.getByRole("heading", { name: "Ассеты и услуги" }).waitFor();
   await page
     .getByRole("button", { name: "Опубликовать работу", exact: true })
     .first()
     .click();
   dialog = page.getByRole("dialog", { name: "Опубликовать работу" });
+  check(
+    "Publication form fields use the light theme",
+    await dialog
+      .locator(
+        ".publish-fields input:not([type=checkbox]):not([type=file]), .publish-fields textarea, .publish-fields select",
+      )
+      .evaluateAll((fields) =>
+        fields.length > 0 && fields.every(
+          (field) =>
+            getComputedStyle(field).backgroundColor === "rgb(255, 255, 255)" &&
+            getComputedStyle(field).color === "rgb(48, 43, 40)",
+        ),
+      ),
+  );
   check(
     "All eight directions publishable",
     (await dialog
@@ -391,14 +405,12 @@ try {
     .getByRole("button", { name: "Письмо из будущего", exact: true })
     .waitFor();
   await page.reload();
-  const storyCard = page
-    .locator(".work-card")
-    .filter({
-      has: page.getByRole("button", {
-        name: "Письмо из будущего",
-        exact: true,
-      }),
-    });
+  const storyCard = page.locator(".work-card").filter({
+    has: page.getByRole("button", {
+      name: "Письмо из будущего",
+      exact: true,
+    }),
+  });
   await storyCard.getByRole("button", { name: "Читать сценарий" }).click();
   const reader = page.getByRole("dialog", { name: "Сценарий", exact: true });
   await reader.getByRole("heading", { name: "Прибытие" }).waitFor();

@@ -11,20 +11,22 @@ import {
 } from "react-router-dom";
 import {
   Bell,
-  Bookmark,
-  LibraryBig,
-  Palette,
+  MessageSquarePlus,
+  Plus,
   ChevronDown,
   ChevronRight,
   Gamepad2,
   LayoutGrid,
   Menu,
-  Plus,
   UserRound,
   Users,
   House,
   CircleHelp,
   X,
+  Moon,
+  Sun,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { StoreProvider, useStore } from "./store";
 import {
@@ -33,7 +35,6 @@ import {
 } from "../features/projects/CreateProject";
 import { Avatar } from "../components/Cards";
 import { Modal } from "../components/Modal";
-import { creators } from "../data/mock";
 import { t } from "../i18n";
 import type { Category } from "../data/types";
 import { PublishWork } from "../features/studio/PublishWork";
@@ -41,6 +42,7 @@ import { directions } from "../data/categories";
 import { NavigationProgress, RoutePending } from "./NavigationProgress";
 import { Start } from "./Start";
 import { Guide, guideSeen } from "./Guide";
+import "../features/games/theme.css";
 const Marketplace = lazy(() =>
   import("../features/marketplace/Marketplace").then((m) => ({
     default: m.Marketplace,
@@ -52,9 +54,6 @@ const Creators = lazy(() =>
 const Profile = lazy(() =>
   import("../features/profile/Profile").then((m) => ({ default: m.Profile })),
 );
-const Games = lazy(() =>
-  import("../features/games/Games").then((m) => ({ default: m.Games })),
-);
 const ProjectPage = lazy(() =>
   import("../features/projects/ProjectPage").then((m) => ({
     default: m.ProjectPage,
@@ -63,24 +62,29 @@ const ProjectPage = lazy(() =>
 const GameWorkspace = lazy(() =>
   import("../features/games/Games").then((m) => ({ default: m.GameWorkspace })),
 );
-const Studio = lazy(() =>
-  import("../features/studio/Studio").then((m) => ({ default: m.Studio })),
-);
-const Library = lazy(() =>
-  import("../features/studio/Studio").then((m) => ({ default: m.Library })),
-);
 const categories = [{ id: "all", icon: LayoutGrid }, ...directions] as const;
 function Shell() {
   const store = useStore(),
     location = useLocation(),
     navigate = useNavigate();
   const [params] = useSearchParams();
+  const boardWindow = /^\/games\/[^/]+$/.test(location.pathname) && params.get("board") === "1";
   const [create, setCreate] = useState(false),
     [publish, setPublish] = useState(false),
     [categoryModal, setCategoryModal] = useState(false),
     [menu, setMenu] = useState(false),
-    [notifications, setNotifications] = useState(false);
+    [notifications, setNotifications] = useState(false),
+    [feedback, setFeedback] = useState(false),
+    [feedbackType, setFeedbackType] = useState<"idea" | "bug" | "friction">("idea"),
+    [feedbackText, setFeedbackText] = useState("");
   const [guide, setGuide] = useState(() => !guideSeen());
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem("sotvor:sidebar-collapsed") === "true"; } catch { return false; }
+  });
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    try { return localStorage.getItem("vibeplacement:theme") === "dark" ? "dark" : "light"; }
+    catch { return "light"; }
+  });
   const mode =
       location.pathname === "/discover" || params.get("mode") === "projects",
     currentCategory = params.get("category") ?? "all";
@@ -101,7 +105,15 @@ function Shell() {
     const timer = window.setTimeout(() => store.setToast(""), 4000);
     return () => clearTimeout(timer);
   }, [store.toast, store.setToast]);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem("vibeplacement:theme", theme); } catch { /* Theme still applies for this session. */ }
+  }, [theme]);
+  useEffect(() => {
+    try { localStorage.setItem("sotvor:sidebar-collapsed", String(sidebarCollapsed)); } catch { /* The layout still applies for this session. */ }
+  }, [sidebarCollapsed]);
   const categoryLink = (id: Category) => {
+    if (location.pathname === "/creators") return `/creators${id === "all" ? "" : `?specialty=${id}`}`;
     const next = new URLSearchParams(
       location.pathname === "/market" ||
         location.pathname === "/discover" ||
@@ -115,7 +127,7 @@ function Shell() {
   };
   return (
     <>
-      <div className="app-shell" inert={guide}>
+      <div className={`app-shell${sidebarCollapsed ? " sidebar-is-collapsed" : ""}${boardWindow ? " is-board-window" : ""}`} inert={guide && !boardWindow}>
         <a href="#main-content" className="skip-link">
           К содержимому
         </a>
@@ -128,15 +140,21 @@ function Shell() {
           >
             {menu ? <X size={22} /> : <Menu size={22} />}
           </button>
-          <Link to="/" className="brand" aria-label="VibePlacement — главная">
+          <button className="icon-btn sidebar-toggle" aria-label={sidebarCollapsed ? "Развернуть меню" : "Свернуть меню"} title={sidebarCollapsed ? "Развернуть меню" : "Свернуть меню"} aria-expanded={!sidebarCollapsed} onClick={() => setSidebarCollapsed((value) => !value)}>
+            {sidebarCollapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
+          </button>
+          <Link to="/" className="brand" aria-label="Игроцех, главная">
             <span className="brand-symbol">
               <Gamepad2 size={25} strokeWidth={2.1} />
             </span>
             <span className="brand-word">
-              Vibe<span>Placement</span>
+              Игроцех
             </span>
           </Link>
           <div className="header-actions">
+            <button className="icon-btn theme-toggle" aria-label={theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему"} title={theme === "dark" ? "Светлая тема" : "Тёмная тема"} onClick={() => setTheme((value) => value === "dark" ? "light" : "dark")}>
+              {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
+            </button>
             <button
               className="icon-btn"
               aria-label="Открыть гайд"
@@ -148,10 +166,10 @@ function Shell() {
             >
               <CircleHelp size={20} />
             </button>
-            <div className="language-switch" title="English — скоро">
+            <div className="language-switch" title="English скоро">
               <span>RU</span>
               <span>/</span>
-              <button disabled aria-label="English — скоро">
+              <button disabled aria-label="English скоро">
                 EN
               </button>
             </div>
@@ -163,12 +181,21 @@ function Shell() {
             >
               <Bell size={18} />
             </button>
+            <button
+              className="beta-feedback-trigger"
+              type="button"
+              aria-label="Оставить отзыв о бета-версии"
+              onClick={() => setFeedback(true)}
+            >
+              <MessageSquarePlus size={16} />
+              <span>Отзыв о бете</span>
+            </button>
             <Link
               to="/profile/denis"
               aria-label="Мой профиль"
               className="header-avatar"
             >
-              <Avatar creator={creators[2]} />
+              <Avatar creator={store.creatorById("denis")} />
             </Link>
           </div>
         </header>
@@ -179,7 +206,7 @@ function Shell() {
             onClick={() => setMenu(false)}
           />
         )}
-        <aside className={`sidebar ${menu ? "open" : ""}`}>
+        <aside className={`sidebar ${menu ? "open" : ""}${sidebarCollapsed ? " is-collapsed" : ""}`}>
           <div className="sidebar-main">
             <nav
               className="personal-nav primary-navigation"
@@ -197,9 +224,10 @@ function Shell() {
                 <Users size={18} />
                 <span>Найти проект</span>
               </NavLink>
+              <NavLink to="/creators"><UserRound size={18} /><span>Креаторы</span></NavLink>
             </nav>
             <div className="sidebar-divider" />
-            <details
+            {location.pathname === "/market" && <details
               className="sidebar-directions"
               open={currentCategory !== "all"}
             >
@@ -242,75 +270,30 @@ function Shell() {
                 }}
               >
                 <Plus size={16} />
-                Своя категория
+                <span>Своя категория</span>
               </button>
-            </details>
-            <div className="sidebar-divider" />
+            </details>}
+            {location.pathname === "/market" && <div className="sidebar-divider" />}
             <div className="sidebar-section-label">ЛИЧНОЕ</div>
             <nav className="personal-nav" aria-label="Личное пространство">
-              <NavLink to="/games">
-                <Gamepad2 size={18} />
-                <span>Мои игры</span>
-                <small>{store.games.length}</small>
-              </NavLink>
-              <NavLink to="/studio">
-                <Palette size={18} />
-                <span>Мои публикации</span>
-              </NavLink>
-              <NavLink to="/library">
-                <LibraryBig size={18} />
-                <span>Мои покупки</span>
-              </NavLink>
-              <NavLink to="/favorites">
-                <Bookmark size={18} />
-                <span>{t("favorites")}</span>
-                {store.favorites.length > 0 && (
-                  <small>{store.favorites.length}</small>
-                )}
-              </NavLink>
               <NavLink to="/profile/denis">
                 <UserRound size={18} />
                 <span>{t("profile")}</span>
               </NavLink>
-              <NavLink to="/creators">
-                <Users size={18} />
-                <span>{t("creators")}</span>
-              </NavLink>
             </nav>
           </div>
           <div className="sidebar-bottom">
-            <div className="start-project">
-              <button
-                onClick={() => {
-                  setMenu(false);
-                  navigate("/games?new=1");
-                }}
-                aria-label="Создать игру"
-              >
-                <Plus size={17} />
-                Создать игру
-              </button>
-            </div>
-            <Link to="/profile/denis" className="sidebar-user">
-              <Avatar creator={creators[2]} />
-              <div>
-                <strong>Денис / dev</strong>
-                <span>Личный профиль</span>
-              </div>
-              <ChevronRight size={15} />
+            <Link
+              to="/profile/denis"
+              className="sidebar-user"
+              aria-label="Мой профиль"
+            >
+              <Avatar creator={store.creatorById("denis")} />
+              <strong>{store.creatorById("denis").name}</strong>
             </Link>
-            <div className="sidebar-footnote">
-              <span>© VibePlacement 2026</span>
-            </div>
           </div>
         </aside>
         <main id="main-content" className="main-content">
-          {import.meta.env.MODE === "github" && (
-            <div className="pages-demo-note">
-              Демо · данные хранятся в этом браузере. Оплаты и отправка откликов
-              отключены.
-            </div>
-          )}
           <Suspense fallback={<RoutePending />}>
             <Routes>
               <Route
@@ -322,7 +305,7 @@ function Shell() {
                       to={`${mode ? "/discover" : "/market"}?${params.toString()}`}
                     />
                   ) : (
-                    <Start onPublish={() => setPublish(true)} />
+                    <Start />
                   )
                 }
               />
@@ -337,15 +320,16 @@ function Shell() {
                 }
               />
               <Route path="/projects/:id" element={<ProjectPage />} />
-              <Route path="/games" element={<Games />} />
+              <Route path="/games" element={<Navigate replace to={`/profile/denis?tab=games${params.get("new") === "1" ? "&new=1" : ""}`} />} />
               <Route path="/games/:id" element={<GameWorkspace />} />
-              <Route path="/studio" element={<Studio />} />
-              <Route path="/library" element={<Library />} />
+              <Route path="/studio" element={<Navigate replace to={`/profile/denis?tab=studio${params.get("publish") === "1" ? "&publish=1" : ""}`} />} />
+              <Route path="/library" element={<Navigate replace to="/profile/denis?tab=library" />} />
               <Route
                 path="/favorites"
-                element={<Marketplace favoritesOnly />}
+                element={<Navigate replace to="/profile/denis?tab=favorites" />}
               />
               <Route path="/creators" element={<Creators />} />
+              <Route path="/profile" element={<Navigate replace to={`/profile/denis?${params.toString()}`} />} />
               <Route path="/profile/:id" element={<Profile />} />
               <Route
                 path="*"
@@ -378,7 +362,7 @@ function Shell() {
                     Сохранённые отклики и запросы:{" "}
                     <strong>{store.applications.length}</strong>
                   </p>
-                  <span>Ожидают подключения сервера.</span>
+                  <span>Сохранены в этом браузере.</span>
                 </>
               ) : (
                 <>
@@ -388,6 +372,39 @@ function Shell() {
                 </>
               )}
             </div>
+          </Modal>
+        )}
+        {feedback && (
+          <Modal title="Отзыв о бета-версии" onClose={() => setFeedback(false)}>
+            <form
+              className="beta-feedback-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const text = feedbackText.trim();
+                if (!text) return;
+                const kind = { idea: "Идея", bug: "Ошибка", friction: "Неудобство" }[feedbackType];
+                const issue = new URL("https://github.com/likeavenus/VibePlacement/issues/new");
+                issue.searchParams.set("title", `${kind}: ${text.split("\n")[0].slice(0, 72)}`);
+                issue.searchParams.set("body", text);
+                window.open(issue.toString(), "_blank", "noopener,noreferrer");
+              }}
+            >
+              <p className="beta-feedback-intro">Расскажите, чего не хватает или что мешает работать. Это поможет выбрать следующие улучшения.</p>
+              <div className="beta-feedback-types" role="group" aria-label="Тип пожелания">
+                {([["idea", "Идея"], ["bug", "Ошибка"], ["friction", "Неудобство"]] as const).map(([value, label]) => (
+                  <button key={value} type="button" aria-pressed={feedbackType === value} className={feedbackType === value ? "is-active" : ""} onClick={() => setFeedbackType(value)}>{label}</button>
+                ))}
+              </div>
+              <label>
+                <span>Ваше сообщение</span>
+                <textarea value={feedbackText} onChange={(event) => setFeedbackText(event.target.value)} maxLength={1200} rows={6} placeholder="Например: хочу видеть быстрый просмотр проекта прямо из списка…" required />
+              </label>
+              <p className="beta-feedback-note">Откроется черновик на GitHub. Чтобы команда увидела отзыв, войдите и опубликуйте его. Не указывайте личные данные: отзыв будет публичным.</p>
+              <div className="form-actions">
+                <button className="secondary-btn" type="button" onClick={() => setFeedback(false)}>Отмена</button>
+                <button className="primary-btn" type="submit" disabled={!feedbackText.trim()}>Продолжить на GitHub ↗</button>
+              </div>
+            </form>
           </Modal>
         )}
         {store.toast && (
@@ -404,10 +421,9 @@ function Shell() {
           </div>
         )}
       </div>
-      {guide && (
+      {guide && !boardWindow && (
         <Guide
           onClose={() => setGuide(false)}
-          onPublish={() => setPublish(true)}
         />
       )}
     </>

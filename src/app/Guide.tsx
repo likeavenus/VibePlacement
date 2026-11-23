@@ -20,10 +20,8 @@ export function guideSeen() {
 type Role = "maker" | "creator";
 export function Guide({
   onClose,
-  onPublish,
 }: {
   onClose: () => void;
-  onPublish: () => void;
 }) {
   const navigate = useNavigate();
   const [step, setStep] = useState(0),
@@ -84,10 +82,10 @@ export function Guide({
       : role === "maker"
         ? step === 1
           ? "make"
-          : "assets"
+          : "people"
         : step === 1
-          ? "publish"
-          : "join";
+          ? "join"
+          : "profile";
   useEffect(() => {
     panel.current?.focus({ preventScroll: true });
     if (!target) {
@@ -130,24 +128,24 @@ export function Guide({
   }, [target, navigate]);
   const title =
     step === 0
-      ? "От идеи до своей игры"
+      ? "Игроцех"
       : role === "maker"
         ? step === 1
           ? "Начни с идеи игры"
-          : "Не всё нужно делать с нуля"
+          : "Найди участников"
         : step === 1
-          ? "Покажи, что создаёшь"
-          : "Найди свою команду";
+          ? "Найди проект"
+          : "Оформи свой профиль";
   const description =
     step === 0
-      ? "Здесь встречаются авторы игр и креаторы. Выбери, с чего хочешь начать. Оба пути всегда доступны."
+      ? "Создавай игру, находи креаторов, публикуй работы."
       : role === "maker"
         ? step === 1
-          ? "Добавь название и идею. Внутри игры — задачи, бюджет и набор людей на нужные роли."
-          : "В каталоге — ассеты и услуги. Смотри работы прямо в браузере и подбирай их под задачи игры."
+          ? "Добавь идею, затем запланируй задачи и найди команду."
+          : "Выбирай специалистов по навыкам, портфолио и доступности."
         : step === 1
-          ? "Выбери направление, добавь файлы и укажи формат: портфолио, услуга или ассет на продажу."
-          : "Отфильтруй игры по жанру и своей роли. На странице проекта — идея, условия и отклик.";
+          ? "Выбери игру по жанру и открытой роли."
+          : "Добавь работы и навыки, чтобы авторы игр могли оценить твой опыт.";
   return (
     <div className={`guide-layer ${rect ? "has-target" : ""}`}>
       <div className="guide-shade" />
@@ -173,7 +171,7 @@ export function Guide({
         ref={panel}
       >
         <div className="guide-top">
-          <span>Быстрый старт · {step + 1} / 3</span>
+          <span>Шаг {step + 1} из 3</span>
           <button
             className="icon-btn"
             aria-label="Закрыть гайд"
@@ -241,13 +239,10 @@ export function Guide({
               onClick={() => {
                 finish();
                 if (role === "maker") navigate("/games?new=1");
-                else {
-                  navigate("/");
-                  onPublish();
-                }
+                else navigate("/discover");
               }}
             >
-              {role === "maker" ? "Создать игру" : "Опубликовать работу"}
+              {role === "maker" ? "Создать игру" : "Найти проект"}
               <ArrowRight size={17} />
             </button>
           )}

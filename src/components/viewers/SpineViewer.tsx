@@ -17,6 +17,7 @@ import {
 import { loadSpineAsset } from "./spineAssets";
 import type { AssetBundle } from "../../data/assets";
 import { Modal } from "../Modal";
+import { UiSelect } from "../UiSelect";
 interface Props {
   assetId?: string;
   draft?: AssetBundle;
@@ -283,20 +284,16 @@ export default function SpineViewer({
           >
             {playing ? <Pause size={16} /> : <Play size={16} />}
           </button>
-          <select
-            aria-label="Анимация"
+          <UiSelect
+            ariaLabel="Анимация"
             value={animation}
-            onChange={(e) => {
-              setAnimation(e.target.value);
+            onChange={(value) => {
+              setAnimation(value);
               setPlaying(true);
             }}
             disabled={!animations.length}
-          >
-            {!animations.length && <option>Загрузка...</option>}
-            {animations.map((name) => (
-              <option key={name}>{name}</option>
-            ))}
-          </select>
+            options={animations.length ? animations.map((name) => ({ value: name, label: name })) : [{ value: "", label: "Загрузка..." }]}
+          />
           <button
             type="button"
             className={`icon-btn ${loop ? "selected" : ""}`}
@@ -307,17 +304,12 @@ export default function SpineViewer({
           >
             <Repeat2 size={16} />
           </button>
-          <select
-            aria-label="Скорость анимации"
-            value={speed}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-          >
-            {[0.25, 0.5, 1, 1.5, 2].map((value) => (
-              <option key={value} value={value}>
-                {value}×
-              </option>
-            ))}
-          </select>
+          <UiSelect
+            ariaLabel="Скорость анимации"
+            value={String(speed)}
+            onChange={(value) => setSpeed(Number(value))}
+            options={[0.25, 0.5, 1, 1.5, 2].map((value) => ({ value: String(value), label: `${value}×` }))}
+          />
         </div>
         <input
           aria-label="Позиция анимации"
@@ -332,15 +324,12 @@ export default function SpineViewer({
           <div className="spine-extra-controls">
             <label>
               Скин
-              <select
-                aria-label="Скин персонажа"
+              <UiSelect
+                ariaLabel="Скин персонажа"
                 value={skin}
-                onChange={(e) => setSkin(e.target.value)}
-              >
-                {skins.map((name) => (
-                  <option key={name}>{name}</option>
-                ))}
-              </select>
+                onChange={setSkin}
+                options={skins.map((name) => ({ value: name, label: name }))}
+              />
             </label>
             <label>
               Масштаб
@@ -401,8 +390,7 @@ export default function SpineViewer({
           <p className="asset-credit">
             {!assetId && !draft && (
               <>
-                Spineboy © Esoteric Software · официальный демонстрационный
-                персонаж ·{" "}
+                Пример: Spineboy, Esoteric Software.{" "}
               </>
             )}
             Spine runtime 4.2

@@ -83,7 +83,7 @@ try {
   await page.waitForTimeout(600);
   check(
     "VibePlacement branding",
-    (await page.title()) === "VibePlacement — твоя игра начинается здесь",
+    (await page.title()) === "VibePlacement: площадка для создателей игр",
   );
   check(
     "Golos Text is loaded",
@@ -168,8 +168,8 @@ try {
     await page.screenshot({ path: "artifacts/spine-expanded.png" });
     await page.keyboard.press("Escape");
     await page
-      .getByRole("button", { name: "Подробнее: Разведчик / набор анимаций" })
-      .click();
+      .getByRole("button", { name: "Подробнее: Разведчик: набор анимаций" })
+      .click({ force: true });
     await page
       .getByLabel("Комментарий", { exact: true })
       .fill("Нужна отдельная анимация приземления.");
@@ -181,8 +181,8 @@ try {
     await page.reload();
     await page.locator("#main-content h1").waitFor();
     await page
-      .getByRole("button", { name: "Подробнее: Разведчик / набор анимаций" })
-      .click();
+      .getByRole("button", { name: "Подробнее: Разведчик: набор анимаций" })
+      .click({ force: true });
     check(
       "Comments persist",
       await page
@@ -191,9 +191,7 @@ try {
     );
     await page.keyboard.press("Escape");
     await navigate(base + "/games/little-station");
-    await page
-      .getByRole("button", { name: "Добавить задачу", exact: true })
-      .click();
+    await page.locator(".game-next-steps").getByRole("button").first().click();
     await page.getByLabel("Сущность / название").fill("Анимация проводника");
     await page
       .getByLabel("Требования")
@@ -241,13 +239,13 @@ try {
     );
     await navigate(base + "/?category=art");
     await page
-      .getByRole("button", { name: "Подробнее: Твой следующий пиксельный мир" })
+      .getByRole("button", { name: "Подробнее: Пиксельный тайлсет 16 × 16" })
       .click();
-    await page.getByRole("button", { name: "Купить ассет" }).click();
+    await page.getByRole("button", { name: "Добавить в покупки" }).first().click();
     await page.getByLabel("Добавить в игру").selectOption("little-station");
-    await page.getByLabel("Понимаю, что это демо-покупка").check();
     await page
-      .getByRole("button", { name: "Подтвердить демо-покупку" })
+      .locator(".checkout-form")
+      .getByRole("button", { name: "Добавить в покупки" })
       .click();
     check(
       "Demo purchase unlocks library",
@@ -264,7 +262,7 @@ try {
       "Purchased asset added to game",
       await page
         .getByRole("button", {
-          name: "Твой следующий пиксельный мир",
+          name: "Пиксельный тайлсет 16 × 16",
           exact: true,
         })
         .isVisible(),

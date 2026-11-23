@@ -1,0 +1,65 @@
+.survey-dialog {
+  width: min(1360px, calc(100vw - 32px));
+  max-width: none;
+  height: min(940px, calc(100dvh - 40px));
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  border: 1px solid #dedfe1;
+  border-radius: 8px;
+  background: #fff;
+  color: #282b30;
+  overflow: hidden;
+}
+.survey-dialog[open] { display: flex; flex-direction: column; }
+.survey-dialog::backdrop { background: #181b2066; }
+.survey-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #e8e9eb; flex-shrink: 0; }
+.survey-header h2 { font-size: 22px; margin: 0; }
+.survey-body { min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.survey-basics { display: grid; grid-template-columns: 1fr 1.4fr; align-items: start; gap: 16px; padding: 20px 24px; }
+.survey-basics label { display: flex; flex-direction: column; gap: 8px; font-size: 15px; font-weight: 500; min-width: 0; }
+.survey-basics input, .survey-basics textarea, .survey-answer input { width: 100%; min-width: 0; font: inherit; font-size: 16px; border: 1px solid #d5d8dd; background: #fff; color: #282b30; padding: 11px 12px; border-radius: 6px; }
+.survey-basics textarea { min-height: 76px; resize: vertical; }
+.survey-dialog input:focus-visible, .survey-dialog textarea:focus-visible, .survey-dialog button:focus-visible { outline: 2px solid #c94744; outline-offset: 2px; }
+.survey-scroll { overflow: auto; border-top: 1px solid #e8e9eb; }
+.survey-canvas { margin: 0 auto; }
+.survey-heading { height: 44px; display: flex; align-items: center; gap: 10px; color: #282b30; background: #fff; }
+.survey-heading strong { font-size: 16px; font-weight: 600; }
+.survey-step { width: 28px; height: 28px; display: grid; place-items: center; flex-shrink: 0; border-radius: 50%; font-size: 15px; background: #f7eeee; color: #b53936; }
+.survey-answer { height: 60px; border: 1px solid #dcdfe3; border-radius: 6px; background: #fff; color: #282b30; transition: border-color .15s, background .15s; }
+.survey-answer:hover { border-color: #c94744; }
+.survey-answer.is-selected { border-color: #c94744; background: #fff5f4; color: #a12f2d; }
+.survey-choice { width: 100%; height: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px; text-align: left; font: inherit; font-size: 16px; line-height: 1.35; border: 0; background: none; color: inherit; cursor: pointer; }
+.survey-choice span { overflow-wrap: anywhere; }
+.survey-choice svg { flex-shrink: 0; }
+.survey-choice:disabled { cursor: default; }
+.survey-answer form { display: flex; gap: 5px; align-items: center; height: 100%; padding: 5px; }
+.survey-answer .react-flow__handle, .survey-heading .react-flow__handle { opacity: 0; pointer-events: none; }
+.survey-canvas .react-flow__node { transition: opacity .2s; }
+.survey-canvas .react-flow__edge-path { stroke: #c94744; stroke-width: 2; }
+.survey-footer { display: flex; gap: 16px; justify-content: space-between; align-items: center; padding: 14px 24px; border-top: 1px solid #e8e9eb; flex-shrink: 0; background: #fff; }
+.survey-footer span { font-size: 15px; color: #62656b; }
+.survey-footer button:disabled { opacity: .4; cursor: default; }
+.survey-dialog * { letter-spacing: 0; }
+.survey-heading strong small{display:block;font-size:12px;font-weight:400;color:var(--ui-secondary)}
+.survey-heading .survey-next{margin-left:auto;flex:none;min-width:36px;min-height:40px;color:var(--ui-link)}
+.survey-answer{position:relative}
+.survey-answer:has(.survey-remove)>.survey-choice{padding-right:44px}
+.survey-remove{position:absolute;right:4px;top:10px;min-height:36px}
+@media (max-width: 700px) {
+  .survey-dialog { width: 100%; height: 100dvh; border: 0; border-radius: 0; }
+  .survey-header { padding: 12px 16px; }
+  .survey-header h2 { font-size: 20px; }
+  .survey-basics { grid-template-columns: 1fr; padding: 16px; }
+  .survey-basics textarea { min-height: 76px; }
+  .survey-footer { align-items: stretch; flex-direction: column; gap: 8px; padding: 10px 16px max(10px, env(safe-area-inset-bottom)); }
+  .survey-footer span { font-size: 14px; }
+  .survey-footer .primary-btn { justify-content: center; }
+  .survey-scroll { overflow: visible; }
+  .survey-body { touch-action: pan-y; }
+  .survey-canvas .react-flow__pane { touch-action: pan-y; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .survey-canvas .react-flow__edge.animated path { animation: none; }
+  .survey-canvas .react-flow__node { transition: none; }
+}

@@ -11,7 +11,9 @@
     "preview": "vite preview --host 0.0.0.0",
     "verify": "node scripts/verify-product.mjs",
     "dev:api": "npm --prefix server run dev",
-    "typecheck:api": "npm --prefix server run typecheck"
+    "typecheck:api": "npm --prefix server run typecheck",
+    "predeploy": "npm run build:pages",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@esotericsoftware/spine-pixi-v8": "~4.2.0",
@@ -20,6 +22,10 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.0",
     "@tailwindcss/vite": "^4.1.0",
+    "@tiptap/extension-placeholder": "^3.33.0",
+    "@tiptap/react": "^3.33.0",
+    "@tiptap/starter-kit": "^3.33.0",
+    "@xyflow/react": "^12.12.1",
     "idb": "^8.0.4",
     "lucide-react": "^0.468.0",
     "pixi.js": "^8.22.0",
@@ -38,6 +44,7 @@
     "@types/react-dom": "^19.2.0",
     "@types/three": "^0.180.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "gh-pages": "^6.3.0",
     "playwright": "^1.56.0",
     "prettier": "^3.9.10",
     "typescript": "~5.9.3",
